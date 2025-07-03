@@ -27,7 +27,7 @@ module Specwrk
 
           server_opts = {
             Port: ENV.fetch("SPECWRK_SRV_PORT", "5138").to_i,
-            Host: ENV.fetch("SPECWRK_SRV_BIND", "127.0.0.1"),
+            BindAddress: ENV.fetch("SPECWRK_SRV_BIND", "127.0.0.1"),
             Logger: WEBrick::Log.new($stdout, WEBrick::Log::FATAL),
             AccessLog: [],
             KeepAliveTimeout: 300

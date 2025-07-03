@@ -75,10 +75,11 @@ module Specwrk
         base.unique_option :verbose, type: :boolean, default: false, desc: "Run in verbose mode. Default false."
       end
 
-      on_setup do |output:, port:, key:, single_run:, group_by:, verbose:, **|
+      on_setup do |port:, bind:, output:, key:, single_run:, group_by:, verbose:, **|
         ENV["SPECWRK_SRV_LOG"] = Pathname.new(File.join(output, "server.log")).expand_path(Dir.pwd).to_s if output && !verbose
         ENV["SPECWRK_SRV_OUTPUT"] = Pathname.new(File.join(output, "report.json")).expand_path(Dir.pwd).to_s if output
         ENV["SPECWRK_SRV_PORT"] = port
+        ENV["SPECWRK_SRV_BIND"] = bind
         ENV["SPECWRK_SRV_KEY"] = key
         ENV["SPECWRK_SRV_SINGLE_RUN"] = "1" if single_run
         ENV["SPECWRK_SRV_GROUP_BY"] = group_by
