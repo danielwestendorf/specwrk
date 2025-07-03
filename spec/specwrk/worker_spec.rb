@@ -104,14 +104,21 @@ RSpec.describe Specwrk::Worker do
     context "calls run_examples until NoMoreExamplesError" do
       before { allow(Specwrk::Client).to receive(:wait_for_server!) }
 
-      it "breaks the loop" do
-        count = 1
-        expect(instance).to receive(:execute).exactly(5).times do
-          if count == 5
-            raise Specwrk::NoMoreExamplesError
-          end
+      it "sleeps but doesn't break loop" do
+        expect(instance).to receive(:sleep)
+          .with(0.5)
+          .exactly(4).times
 
+        count = 0
+        expect(instance).to receive(:execute).exactly(5).times do
           count += 1
+
+          if count < 5
+            raise Specwrk::NoMoreExamplesError
+          else
+            # breaks the loop
+            raise Specwrk::CompletedAllExamplesError
+          end
         end
 
         expect($stdout).to receive(:write)

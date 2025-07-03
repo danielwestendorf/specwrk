@@ -29,9 +29,13 @@ module Specwrk
         break if Specwrk.force_quit
 
         execute
-      rescue CompletedAllExamplesError, NoMoreExamplesError
-        # TODO: Sleep on NoMoreExamplesError to allow for retries
+      rescue CompletedAllExamplesError
         break
+      rescue NoMoreExamplesError
+        # Wait for the other processes (workers) on the same host to finish
+        # This will cause workers to 'hang' until all work has been completed
+        # TODO: break here if all the other worker processes on this host are done executing examples
+        sleep 0.5
       end
 
       executor.final_output.tap(&:rewind).each_line { |line| $stdout.write line }
