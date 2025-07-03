@@ -1,0 +1,20 @@
+FROM ruby:3.4-alpine
+
+WORKDIR /app
+
+RUN mkdir .specwrk/
+
+ARG SPECWRK_SRV_PORT=5138
+ARG SPECWRK_VERSION=latest
+ARG GEMFILE=specwrk-$SPECWRK_VERSION.gem
+
+COPY $GEMFILE ./
+RUN gem install ./$GEMFILE --no-document
+RUN rm ./$GEMFILE
+
+COPY docker/entrypoint.server.sh /usr/local/bin/entrypoint
+RUN chmod +x /usr/local/bin/entrypoint
+
+EXPOSE ${SPECWRK_SRV_PORT}
+
+ENTRYPOINT ["entrypoint"]

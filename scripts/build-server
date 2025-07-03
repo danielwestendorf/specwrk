@@ -1,0 +1,16 @@
+#!/bin/bash
+
+SPECWRK_VERSION=$(bundle exec exe/specwrk --version)
+GEMFILE=specwrk-$SPECWRK_VERSION.gem
+
+gem build
+
+docker buildx build --build-arg SPECWRK_VERSION=$SPECWRK_VERSION \
+  --platform linux/arm64,linux/amd64 \
+  --push \
+  --file docker/Dockerfile.server \
+  --tag docker.io/danielwestendorf/specwrk-server:latest \
+  --tag docker.io/danielwestendorf/specwrk:$SPECWRK_VERSION \
+  .
+
+rm ./$GEMFILE
