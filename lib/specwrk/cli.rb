@@ -67,6 +67,7 @@ module Specwrk
 
       on_included do |base|
         base.unique_option :port, type: :integer, default: ENV.fetch("SPECWRK_SRV_PORT", "5138"), aliases: ["-p"], desc: "Server port. Overrides SPECWRK_SRV_PORT. Default 5138."
+        base.unique_option :bind, type: :string, default: ENV.fetch("SPECWRK_SRV_BIND", "127.0.0.1"), aliases: ["-b"], desc: "Server bind address. Overrides SPECWRK_SRV_BIND. Default 127.0.0.1."
         base.unique_option :key, type: :string, aliases: ["-k"], default: ENV.fetch("SPECWRK_SRV_KEY", ""), desc: "Authentication key clients must use for access. Overrides SPECWRK_SRV_KEY. Default ''."
         base.unique_option :output, type: :string, default: ENV.fetch("SPECWRK_OUT", ".specwrk/"), aliases: ["-o"], desc: "Directory where worker output is stored. Overrides SPECWRK_OUT. Default '.specwrk/'."
         base.unique_option :group_by, values: %w[file timings], default: ENV.fetch("SPECWERK_SRV_GROUP_BY", "timings"), desc: "How examples will be grouped for workers; fallback to file if no timings are found. Overrides SPECWERK_SRV_GROUP_BY. Default timings."

@@ -11,6 +11,7 @@ RSpec.describe Specwrk::Web::App do
     let(:server_opts) do
       {
         Port: ENV.fetch("SPECWRK_SRV_PORT", "5138").to_i,
+        Host: "127.0.0.1",
         Logger: kind_of(WEBrick::Log),
         AccessLog: [],
         KeepAliveTimeout: 300
