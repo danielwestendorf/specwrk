@@ -35,6 +35,10 @@ module Hookable
   end
 
   module ClassMethods
+    def unique_option(name, opts = {})
+      option(name, opts) unless options.find { |existing_option| existing_option.name == name }
+    end
+
     def setup(**args)
       setup_hooks.each { |blk| blk.call(**args) }
     end

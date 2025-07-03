@@ -5,7 +5,7 @@ require "specwrk/cli"
 
 trap("INT") do
   if Specwrk.starting_pid == Process.pid && !Specwrk.force_quit
-    warn "Waiting for in-progress work to finish. Interrupt again to force quit (warning: at_exit hooks will be skipped if you force quit)."
+    warn " ↓ Waiting for in-progress work to finish. Interrupt again to force quit (warning: at_exit hooks will be skipped if you force quit)."
 
     Specwrk.force_quit = true
   elsif Specwrk.starting_pid != Process.pid

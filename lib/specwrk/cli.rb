@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "pathname"
+
 require "dry/cli"
 
 require "specwrk"
@@ -13,10 +15,10 @@ module Specwrk
       extend Hookable
 
       on_included do |base|
-        base.option :uri, type: :string, default: ENV.fetch("SPECWRK_SRV_URI", "https://localhost:#{ENV.fetch("SPECWRK_SRV_PORT", "5138")}"), desc: "HTTP URI of the server to pull jobs from"
-        base.option :key, type: :string, default: ENV.fetch("SPECWRK_SRV_KEY", ""), aliases: ["-k"], desc: "Authentication key for accessing the server"
-        base.option :run, type: :string, default: ENV.fetch("SPECWRK_SRV_KEY", "main"), aliases: ["-r"], desc: "The run identifier for this job execution"
-        base.option :timeout, type: :integer, default: ENV.fetch("SPECWRK_TIMEOUT", "5"), aliases: ["-t"], desc: "The amount of time to wait for the server to respond"
+        base.unique_option :uri, type: :string, default: ENV.fetch("SPECWRK_SRV_URI", "https://localhost:#{ENV.fetch("SPECWRK_SRV_PORT", "5138")}"), desc: "HTTP URI of the server to pull jobs from. Overrides SPECWRK_SRV_PORT. Default 5138."
+        base.unique_option :key, type: :string, default: ENV.fetch("SPECWRK_SRV_KEY", ""), aliases: ["-k"], desc: "Authentication key clients must use for access. Overrides SPECWRK_SRV_KEY. Default ''."
+        base.unique_option :run, type: :string, default: ENV.fetch("SPECWRK_RUN", "main"), aliases: ["-r"], desc: "The run identifier for this job execution. Overrides SPECWRK_RUN. Default main."
+        base.unique_option :timeout, type: :integer, default: ENV.fetch("SPECWRK_TIMEOUT", "5"), aliases: ["-t"], desc: "The amount of time to wait for the server to respond. Overrides SPECWRK_TIMEOUT. Default 5."
       end
 
       on_setup do |uri:, key:, run:, timeout:, **|
@@ -31,9 +33,9 @@ module Specwrk
       extend Hookable
 
       on_included do |base|
-        base.option :id, type: :string, default: "specwrk-worker", desc: "The identifier for this worker"
-        base.option :count, type: :integer, default: 1, aliases: ["-c"], desc: "The number of worker processes you want to start"
-        base.option :output, type: :string, default: ENV.fetch("SPECWRK_OUT", ".specwrk/"), aliases: ["-o"], desc: "Directory where worker output is stored"
+        base.unique_option :id, type: :string, default: "specwrk-worker", desc: "The identifier for this worker. Default specwrk-worker(-COUNT_INDEX)."
+        base.unique_option :count, type: :integer, default: 1, aliases: ["-c"], desc: "The number of worker processes you want to start. Default 1."
+        base.unique_option :output, type: :string, default: ENV.fetch("SPECWRK_OUT", ".specwrk/"), aliases: ["-o"], desc: "Directory where worker output is stored. Overrides SPECWRK_OUT. Default '.specwrk/'."
       end
 
       on_setup do |id:, count:, output:, **|
@@ -64,14 +66,16 @@ module Specwrk
       extend Hookable
 
       on_included do |base|
-        base.option :port, type: :integer, default: ENV.fetch("SPECWRK_SRV_PORT", "5138"), aliases: ["-p"], desc: "Server port"
-        base.option :key, type: :string, aliases: ["-k"], default: ENV.fetch("SPECWRK_SRV_KEY", ""), desc: "Authentication key clients must use for access"
-        base.option :output, type: :string, default: ENV.fetch("SPECWRK_OUT", ".specwrk/"), aliases: ["-o"], desc: "Directory where worker output is stored"
-        base.option :single_run, type: :boolean, default: !ENV["SPECWRK_SRV_SINGLE_RUN"].nil?, desc: "Act on shutdown requests from clients"
-        base.option :group_by, values: %w[file timings], default: ENV.fetch("SPECWERK_SRV_GROUP_BY", "timings"), desc: "How examples will be grouped for workers; fallback to file if no timings are found"
+        base.unique_option :port, type: :integer, default: ENV.fetch("SPECWRK_SRV_PORT", "5138"), aliases: ["-p"], desc: "Server port. Overrides SPECWRK_SRV_PORT. Default 5138."
+        base.unique_option :key, type: :string, aliases: ["-k"], default: ENV.fetch("SPECWRK_SRV_KEY", ""), desc: "Authentication key clients must use for access. Overrides SPECWRK_SRV_KEY. Default ''."
+        base.unique_option :output, type: :string, default: ENV.fetch("SPECWRK_OUT", ".specwrk/"), aliases: ["-o"], desc: "Directory where worker output is stored. Overrides SPECWRK_OUT. Default '.specwrk/'."
+        base.unique_option :group_by, values: %w[file timings], default: ENV.fetch("SPECWERK_SRV_GROUP_BY", "timings"), desc: "How examples will be grouped for workers; fallback to file if no timings are found. Overrides SPECWERK_SRV_GROUP_BY. Default timings."
+        base.unique_option :single_run, type: :boolean, default: false, desc: "Act on shutdown requests from clients. Default: false."
+        base.unique_option :verbose, type: :boolean, default: false, desc: "Run in verbose mode. Default false."
       end
 
-      on_setup do |output:, port:, key:, single_run:, group_by:, **|
+      on_setup do |output:, port:, key:, single_run:, group_by:, verbose:, **|
+        ENV["SPECWRK_SRV_LOG"] = Pathname.new(File.join(output, "server.log")).expand_path(Dir.pwd).to_s if output && !verbose
         ENV["SPECWRK_SRV_OUTPUT"] = Pathname.new(File.join(output, "report.json")).expand_path(Dir.pwd).to_s if output
         ENV["SPECWRK_SRV_PORT"] = port
         ENV["SPECWRK_SRV_KEY"] = key
@@ -134,7 +138,7 @@ module Specwrk
     class Serve < Dry::CLI::Command
       include Servable
 
-      desc "Start a server"
+      desc "Start a queue server"
 
       def call(**args)
         self.class.setup(**args)
@@ -168,6 +172,7 @@ module Specwrk
           Specwrk::Web::App.run!
         end
 
+        return if Specwrk.force_quit
         seed_pid = Process.fork do
           require "specwrk/list_examples"
           require "specwrk/client"
@@ -184,11 +189,14 @@ module Specwrk
 
         wait_for_pids_exit([seed_pid])
 
+        return if Specwrk.force_quit
         status "Starting #{worker_count} workers..."
         start_workers
 
         status "#{worker_count} workers started ✓\n"
         wait_for_pids_exit(@worker_pids)
+
+        return if Specwrk.force_quit
 
         require "specwrk/cli_reporter"
         status = Specwrk::CLIReporter.new.report
