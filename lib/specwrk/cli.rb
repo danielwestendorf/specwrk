@@ -195,42 +195,22 @@ module Specwrk
           status "Samples seeded ✓"
         end
 
-        wait_for_pids_exit([seed_pid])
+        Specwrk.wait_for_pids_exit([seed_pid])
 
         return if Specwrk.force_quit
         status "Starting #{worker_count} workers..."
         start_workers
 
         status "#{worker_count} workers started ✓\n"
-        wait_for_pids_exit(@worker_pids)
+        Specwrk.wait_for_pids_exit(@worker_pids)
 
         return if Specwrk.force_quit
 
         require "specwrk/cli_reporter"
         status = Specwrk::CLIReporter.new.report
 
-        wait_for_pids_exit([web_pid, seed_pid] + @worker_pids)
+        Specwrk.wait_for_pids_exit([web_pid, seed_pid] + @worker_pids)
         exit(status)
-      end
-
-      def wait_for_pids_exit(pids)
-        exited_pids = {}
-
-        loop do
-          pids.each do |pid|
-            next if exited_pids.key? pid
-
-            _, status = Process.waitpid2(pid, Process::WNOHANG)
-            exited_pids[pid] = status.exitstatus if status&.exitstatus
-          rescue Errno::ECHILD
-            exited_pids[pid] = 0
-          end
-
-          break if exited_pids.keys.length == pids.length
-          sleep 0.1
-        end
-
-        exited_pids
       end
 
       def status(msg)
