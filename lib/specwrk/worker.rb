@@ -42,10 +42,14 @@ module Specwrk
 
       @heartbeat_thread.kill
       client.close
+
+      status
     rescue Errno::ECONNREFUSED
       warn "\nServer at #{ENV.fetch("SPECWRK_SRV_URI", "http://localhost:5138")} is refusing connections, exiting..."
+      1
     rescue Errno::ECONNRESET
       warn "\nServer at #{ENV.fetch("SPECWRK_SRV_URI", "http://localhost:5138")} stopped responding to connections, exiting..."
+      1
     end
 
     def execute
@@ -82,6 +86,13 @@ module Specwrk
     private
 
     attr_reader :running, :client, :executor
+
+    def status
+      return 1 if executor.failure
+      return 1 if Specwrk.force_quit
+
+      0
+    end
 
     def warn(msg)
       super("#{ENV.fetch("SPECWRK_ID", "specwrk-worker")}: #{msg}")

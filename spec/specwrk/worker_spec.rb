@@ -4,8 +4,9 @@ require "specwrk/worker"
 
 RSpec.describe Specwrk::Worker do
   let(:client) { instance_double(Specwrk::Client, close: true, fetch_examples: %w[a.rb:1 b.rb:2]) }
-  let(:executor) { instance_double(Specwrk::Worker::Executor, final_output: tempfile, examples: %w[a.rb:1 b.rb:2]) }
+  let(:executor) { instance_double(Specwrk::Worker::Executor, final_output: tempfile, examples: %w[a.rb:1 b.rb:2], failure: failure) }
   let(:tempfile) { instance_double(Tempfile, rewind: true) }
+  let(:failure) { false }
   let(:thread) { instance_double(Thread, kill: true) }
 
   let(:instance) { described_class.new }
@@ -42,20 +43,22 @@ RSpec.describe Specwrk::Worker do
     context "server connection refused" do
       before { allow(Specwrk::Client).to receive(:wait_for_server!).and_raise(Errno::ECONNREFUSED) }
 
-      it "warns and exits cleanly" do
+      it "warns and exits status 1" do
         expect(instance).to receive(:warn)
+          .with(a_string_including("refusing connections"))
 
-        expect { subject }.not_to raise_error
+        expect(subject).to eq(1)
       end
     end
 
     context "server connection reset" do
       before { allow(Specwrk::Client).to receive(:wait_for_server!).and_raise(Errno::ECONNRESET) }
 
-      it "warns and exits cleanly" do
+      it "warns and exits with status 1" do
         expect(instance).to receive(:warn)
+          .with(a_string_including("stopped responding"))
 
-        expect { subject }.not_to raise_error
+        expect(subject).to eq(1)
       end
     end
 
@@ -65,9 +68,9 @@ RSpec.describe Specwrk::Worker do
       it "breaks the loop" do
         count = 0
         expect(instance).to receive(:execute).exactly(4).times
-        expect(Specwrk).to receive(:force_quit).exactly(5).times do
+        expect(Specwrk).to receive(:force_quit).exactly(6).times do
           count += 1
-          count == 5
+          count >= 5
         end
 
         expect($stdout).to receive(:write)
@@ -75,14 +78,14 @@ RSpec.describe Specwrk::Worker do
         expect($stdout).to receive(:write)
           .with("bar")
 
-        expect { subject }.not_to raise_error
+        expect(subject).to eq(1)
       end
     end
 
     context "calls run_examples until CompletedAllExamplesError" do
       before { allow(Specwrk::Client).to receive(:wait_for_server!) }
 
-      it "breaks the loop" do
+      it "breaks the loop and returns 0" do
         count = 1
         expect(instance).to receive(:execute).exactly(5).times do
           if count == 5
@@ -97,7 +100,7 @@ RSpec.describe Specwrk::Worker do
         expect($stdout).to receive(:write)
           .with("bar")
 
-        expect { subject }.not_to raise_error
+        expect(subject).to eq(0)
       end
     end
 
@@ -105,6 +108,7 @@ RSpec.describe Specwrk::Worker do
       before { allow(Specwrk::Client).to receive(:wait_for_server!) }
 
       it "sleeps but doesn't break loop" do
+        completed = false
         expect(instance).to receive(:sleep)
           .with(0.5)
           .exactly(4).times
@@ -117,6 +121,7 @@ RSpec.describe Specwrk::Worker do
             raise Specwrk::NoMoreExamplesError
           else
             # breaks the loop
+            completed = true
             raise Specwrk::CompletedAllExamplesError
           end
         end
@@ -126,7 +131,8 @@ RSpec.describe Specwrk::Worker do
         expect($stdout).to receive(:write)
           .with("bar")
 
-        expect { subject }.not_to raise_error
+        expect(subject).to eq(0)
+        expect(completed).to eq(true) # ensures the loop was broken in the way we expected
       end
     end
   end

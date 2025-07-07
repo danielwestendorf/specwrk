@@ -54,7 +54,8 @@ module Specwrk
 
             require "specwrk/worker"
 
-            Specwrk::Worker.run!
+            status = Specwrk::Worker.run!
+            exit(status)
           end
         end
       end
