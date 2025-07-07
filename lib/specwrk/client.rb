@@ -19,6 +19,7 @@ module Specwrk
     def self.build_http
       uri = URI(ENV.fetch("SPECWRK_SRV_URI", "http://localhost:5138"))
       Net::HTTP.new(uri.host, uri.port).tap do |http|
+        http.use_ssl = uri.scheme == "https"
         http.open_timeout = ENV.fetch("SPECWRK_TIMEOUT", "5").to_i
         http.read_timeout = ENV.fetch("SPECWRK_TIMEOUT", "5").to_i
         http.keep_alive_timeout = 300

@@ -37,6 +37,43 @@ RSpec.describe Specwrk::Client do
     end
   end
 
+  describe ".build_http" do
+    before do
+      stub_const("ENV", ENV.to_h.merge(
+        "SPECWRK_SRV_URI" => base_uri,
+        "SPECWRK_TIMEOUT" => "42"
+      ))
+    end
+
+    context "use_ssl" do
+      subject { described_class.build_http.use_ssl? }
+
+      context "http" do
+        let(:base_uri) { "http://example.com" }
+
+        it { is_expected.to eq(false) }
+      end
+
+      context "https" do
+        let(:base_uri) { "https://example.com" }
+
+        it { is_expected.to eq(true) }
+      end
+    end
+
+    context "open_timeout" do
+      subject { described_class.build_http.open_timeout }
+
+      it { is_expected.to eq(42) }
+    end
+
+    context "read_timeout" do
+      subject { described_class.build_http.read_timeout }
+
+      it { is_expected.to eq(42) }
+    end
+  end
+
   describe ".wait_for_server!" do
     before do
       stub_const("ENV", ENV.to_h.merge("SPECWRK_TIMEOUT" => "1"))
