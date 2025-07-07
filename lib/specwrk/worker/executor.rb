@@ -11,6 +11,10 @@ require "specwrk/worker/null_formatter"
 module Specwrk
   class Worker
     class Executor
+      def failure
+        completion_formatter.failure
+      end
+
       def examples
         completion_formatter.examples
       end

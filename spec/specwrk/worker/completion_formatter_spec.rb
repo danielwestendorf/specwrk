@@ -10,30 +10,44 @@ RSpec.describe Specwrk::Worker::CompletionFormatter do
 
   let(:instance) { described_class.new }
   let(:group_notification) { instance_double RSpec::Core::Notifications::ExamplesNotification, notifications: notifications }
-  let(:notifications) { [instance_double(RSpec::Core::Notifications::ExampleNotification, example: example)] }
 
-  let(:example) do
-    instance_double RSpec::Core::Example,
-      id: "foo.rb:1",
-      full_description: "foobar",
-      metadata: {
-        execution_result: execution_result,
-        file_path: "foo.rb",
-        line_number: 1
-      }
-  end
-
-  let(:execution_result) do
-    instance_double RSpec::Core::Example::ExecutionResult,
-      status: "passed",
+  def notification_factory(status)
+    execution_result = instance_double RSpec::Core::Example::ExecutionResult,
+      status: status,
       started_at: Time.now - 10,
       finished_at: Time.now,
       run_time: 10.0
+
+    example = instance_double RSpec::Core::Example,
+      id: "foo.rb:1",
+      full_description: "foobar",
+      execution_result: execution_result,
+      metadata: {
+        file_path: "foo.rb",
+        line_number: 1
+      }
+    instance_double(RSpec::Core::Notifications::ExampleNotification, example: example)
   end
 
-  describe "#example_passed" do
+  describe "#stop" do
     subject { instance.stop(group_notification) }
 
-    it { expect { subject }.to change(instance.examples, :length).from(0).to(1) }
+    context "all examples passed" do
+      let(:notifications) do
+        [notification_factory(:passed), notification_factory(:passed)]
+      end
+
+      it { expect { subject }.to change(instance.examples, :length).from(0).to(2) }
+      it { expect { subject }.not_to change(instance, :failure) }
+    end
+
+    context "a example failed" do
+      let(:notifications) do
+        [notification_factory(:failed), notification_factory(:passed)]
+      end
+
+      it { expect { subject }.to change(instance.examples, :length).from(0).to(2) }
+      it { expect { subject }.to change(instance, :failure).from(false).to(true) }
+    end
   end
 end

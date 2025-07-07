@@ -3,6 +3,12 @@ require "specwrk/worker/executor"
 RSpec.describe Specwrk::Worker::Executor do
   let(:instance) { described_class.new }
 
+  describe "#failure" do
+    subject { instance.failure }
+
+    it { is_expected.to be(instance.completion_formatter.failure) }
+  end
+
   describe "#examples" do
     subject { instance.examples }
 
