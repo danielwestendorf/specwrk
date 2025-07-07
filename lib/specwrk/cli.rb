@@ -134,12 +134,20 @@ module Specwrk
         self.class.setup(**args)
 
         start_workers
-        Process.waitall
+        wait_for_workers_exit
 
         require "specwrk/cli_reporter"
-        status = Specwrk::CLIReporter.new.report
+        Specwrk::CLIReporter.new.report
 
         exit(status)
+      end
+
+      def wait_for_workers_exit
+        @exited_pids = Specwrk.wait_for_pids_exit(@worker_pids)
+      end
+
+      def status
+        @exited_pids.value?(1) ? 1 : 0
       end
     end
 
