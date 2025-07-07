@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "specwrk/version"
+require "specwrk/version"
 
 module Specwrk
   Error = Class.new(StandardError)
@@ -15,7 +15,7 @@ module Specwrk
   @starting_pid = Process.pid
 
   class << self
-    attr_accessor :force_quit
+    attr_accessor :force_quit, :net_http
     attr_reader :starting_pid
 
     def wait_for_pids_exit(pids)

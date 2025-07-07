@@ -7,6 +7,15 @@ RSpec.describe Specwrk::Client do
   let(:srv_key) { "secret-key" }
   let(:run_id) { "run-123" }
 
+  around do |ex|
+    previous_net_http = Specwrk.net_http
+    Specwrk.net_http = Net::HTTP
+
+    ex.run
+
+    Specwrk.net_http = previous_net_http
+  end
+
   before do
     stub_const("ENV", ENV.to_h.merge(
       "SPECWRK_SRV_URI" => base_uri,

@@ -4,6 +4,12 @@ require "uri"
 require "net/http"
 require "json"
 
+require "specwrk"
+
+# Some rspec setups might use webmock, which intercepts specwrk server calls
+# Let's capture the OG HTTP before that happens
+Specwrk.net_http = Net::HTTP
+
 module Specwrk
   class Client
     def self.connect?
@@ -18,7 +24,7 @@ module Specwrk
 
     def self.build_http
       uri = URI(ENV.fetch("SPECWRK_SRV_URI", "http://localhost:5138"))
-      Net::HTTP.new(uri.host, uri.port).tap do |http|
+      Specwrk.net_http.new(uri.host, uri.port).tap do |http|
         http.use_ssl = uri.scheme == "https"
         http.open_timeout = ENV.fetch("SPECWRK_TIMEOUT", "5").to_i
         http.read_timeout = ENV.fetch("SPECWRK_TIMEOUT", "5").to_i
@@ -106,28 +112,28 @@ module Specwrk
     private
 
     def get(path, headers: default_headers, body: nil)
-      request = Net::HTTP::Get.new(path, headers)
+      request = Specwrk.net_http::Get.new(path, headers)
       request.body = body if body
 
       make_request(request)
     end
 
     def post(path, headers: default_headers, body: nil)
-      request = Net::HTTP::Post.new(path, headers)
+      request = Specwrk.net_http::Post.new(path, headers)
       request.body = body if body
 
       make_request(request)
     end
 
     def put(path, headers: default_headers, body: nil)
-      request = Net::HTTP::Put.new(path, headers)
+      request = Specwrk.net_http::Put.new(path, headers)
       request.body = body if body
 
       make_request(request)
     end
 
     def delete(path, headers: default_headers, body: nil)
-      request = Net::HTTP::Delete.new(path, headers)
+      request = Specwrk.net_http::Delete.new(path, headers)
       request.body = body if body
 
       make_request(request)
