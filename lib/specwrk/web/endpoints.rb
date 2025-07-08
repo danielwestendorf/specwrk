@@ -94,7 +94,9 @@ module Specwrk
 
           if @examples.length.positive?
             [200, {"Content-Type" => "application/json"}, [JSON.generate(@examples)]]
-          elsif processing_queue.length.zero?
+          elsif pending_queue.length.zero? && processing_queue.length.zero? && completed_queue.length.zero?
+            [204, {"Content-Type" => "text/plain"}, ["Waiting for sample to be seeded."]]
+          elsif completed_queue.length.positive? && processing_queue.length.zero?
             [410, {"Content-Type" => "text/plain"}, ["That's a good lad. Run along now and go home."]]
           else
             not_found
