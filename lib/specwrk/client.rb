@@ -88,6 +88,8 @@ module Specwrk
       case response.code
       when "200"
         JSON.parse(response.body, symbolize_names: true)
+      when "204"
+        raise WaitingForSeedError
       when "404"
         raise NoMoreExamplesError
       when "410"
