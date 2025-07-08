@@ -29,5 +29,11 @@ jobs:
       - name: Run the default task
         run: bundle exec rake
 
-      - name: Run tests via specwrk
+      - name: Run tests via specwrk start
         run: bundle exec specwrk start --count 2 spec/
+
+      - name: Run tests via specwrk and individual commands
+        run: |
+          bundle exec specwrk serve --single-run 2>&1 &
+          bundle exec specwrk seed spec
+          bundle exec specwrk work --count 2
