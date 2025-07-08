@@ -19,7 +19,9 @@ RSpec.describe Specwrk::Web::Endpoints do
   let(:processing_queue) { Specwrk::Web::PROCESSING_QUEUES[run] }
   let(:completed_queue) { Specwrk::Web::COMPLETED_QUEUES[run] }
 
-  before { stub_const("ENV", {"SPECWRK_SRV_OUTPUT" => ".non-existant.json"}) }
+  let(:env_vars) { {"SPECWRK_SRV_OUTPUT" => ".non-existant.json"} }
+
+  before { stub_const("ENV", env_vars) }
 
   around do |ex|
     Specwrk::Web.clear_queues
@@ -36,8 +38,28 @@ RSpec.describe Specwrk::Web::Endpoints do
   describe Specwrk::Web::Endpoints::Seed do
     let(:body) { JSON.generate([{id: 1, file_path: "a.rb:1", run_time: 0.1}]) }
 
-    it { is_expected.to eq(ok) }
-    it { expect { subject }.to change(pending_queue, :length).from(0).to(1) }
+    context "SPECWRK_SRV_SINGLE_SEED_PER_RUN and pending_queue already has examples" do
+      let(:env_vars) { {"SPECWRK_SRV_OUTPUT" => ".non-existant.json", "SPECWRK_SRV_SINGLE_SEED_PER_RUN" => "1"} }
+
+      before { pending_queue.merge!(2 => {id: 2, file_path: "b.rb:1", run_time: 0.1}) }
+
+      it { is_expected.to eq(ok) }
+      it { expect { subject }.not_to change(pending_queue, :length) }
+    end
+
+    context "SPECWRK_SRV_SINGLE_SEED_PER_RUN and but pending_queue is empty" do
+      let(:env_vars) { {"SPECWRK_SRV_OUTPUT" => ".non-existant.json", "SPECWRK_SRV_SINGLE_SEED_PER_RUN" => "1"} }
+
+      it { is_expected.to eq(ok) }
+      it { expect { subject }.to change(pending_queue, :length).from(0).to(1) }
+    end
+
+    context "examples get merged into pending queue" do
+      let(:env_vars) { {"SPECWRK_SRV_OUTPUT" => ".non-existant.json", "SPECWRK_SRV_SINGLE_SEED_PER_RUN" => nil} }
+
+      it { is_expected.to eq(ok) }
+      it { expect { subject }.to change(pending_queue, :length).from(0).to(1) }
+    end
   end
 
   describe Specwrk::Web::Endpoints::Complete do

@@ -19,7 +19,11 @@ module Specwrk
     end
 
     def synchronize(&blk)
-      @mutex.synchronize { yield(@hash) }
+      if @mutex.owned?
+        yield(@hash)
+      else
+        @mutex.synchronize { yield(@hash) }
+      end
     end
 
     def method_missing(name, *args, &block)
@@ -70,7 +74,7 @@ module Specwrk
     end
 
     def merge_with_previous_run_times!(h2)
-      @mutex.synchronize do
+      synchronize do
         h2.each { |_id, example| merge_example(example) }
 
         # Sort by exepcted run time, slowest to fastest

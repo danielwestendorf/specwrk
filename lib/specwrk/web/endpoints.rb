@@ -58,8 +58,15 @@ module Specwrk
 
       class Seed < Base
         def response
-          examples = payload.map { |hash| [hash[:id], hash] }.to_h
-          pending_queue.merge_with_previous_run_times!(examples)
+          pending_queue.synchronize do |pending_queue_hash|
+            unless ENV["SPECWRK_SRV_SINGLE_SEED_PER_RUN"] && pending_queue_hash.length.positive?
+              examples = payload.map { |hash| [hash[:id], hash] }.to_h
+
+              pending_queue.merge_with_previous_run_times!(examples)
+
+              ok
+            end
+          end
 
           ok
         end

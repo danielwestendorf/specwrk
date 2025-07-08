@@ -77,10 +77,11 @@ module Specwrk
         base.unique_option :output, type: :string, default: ENV.fetch("SPECWRK_OUT", ".specwrk/"), aliases: ["-o"], desc: "Directory where worker output is stored. Overrides SPECWRK_OUT. Default '.specwrk/'."
         base.unique_option :group_by, values: %w[file timings], default: ENV.fetch("SPECWERK_SRV_GROUP_BY", "timings"), desc: "How examples will be grouped for workers; fallback to file if no timings are found. Overrides SPECWERK_SRV_GROUP_BY. Default timings."
         base.unique_option :single_run, type: :boolean, default: false, desc: "Act on shutdown requests from clients. Default: false."
+        base.unique_option :single_seed_per_run, type: :boolean, default: false, desc: "Only allow one seed per run. Useful for CI where many nodes may seed at the same time. Default: false."
         base.unique_option :verbose, type: :boolean, default: false, desc: "Run in verbose mode. Default false."
       end
 
-      on_setup do |port:, bind:, output:, key:, single_run:, group_by:, verbose:, **|
+      on_setup do |port:, bind:, output:, key:, single_run:, single_seed_per_run:, group_by:, verbose:, **|
         ENV["SPECWRK_OUT"] = Pathname.new(output).expand_path(Dir.pwd).to_s
         FileUtils.mkdir_p(ENV["SPECWRK_OUT"])
 
@@ -90,6 +91,7 @@ module Specwrk
         ENV["SPECWRK_SRV_BIND"] = bind
         ENV["SPECWRK_SRV_KEY"] = key
         ENV["SPECWRK_SRV_SINGLE_RUN"] = "1" if single_run
+        ENV["SPECWRK_SRV_SINGLE_SEED_PER_RUN"] = "1" if single_seed_per_run
         ENV["SPECWRK_SRV_GROUP_BY"] = group_by
       end
     end
