@@ -36,6 +36,17 @@ module Specwrk
         # This will cause workers to 'hang' until all work has been completed
         # TODO: break here if all the other worker processes on this host are done executing examples
         sleep 0.5
+      rescue WaitingForSeedError
+        @seed_wait_count ||= 0
+        @seed_wait_count += 1
+
+        if @seed_wait_count <= 10
+          warn "No examples seeded yet, waiting..."
+          sleep 1
+        else
+          warn "No examples seeded, giving up!"
+          break
+        end
       end
 
       executor.final_output.tap(&:rewind).each_line { |line| $stdout.write line }
