@@ -125,6 +125,31 @@ RSpec.describe Specwrk::Worker do
       end
     end
 
+    context "calls run_examples when WaitingForSeedError" do
+      let(:example_processed) { nil }
+
+      before { allow(Specwrk::Client).to receive(:wait_for_server!) }
+
+      it "waits up to 10s before exiting" do
+        expect(instance).to receive(:sleep)
+          .with(1)
+          .exactly(10).times
+
+        expect(instance).to receive(:execute)
+          .and_raise(Specwrk::WaitingForSeedError)
+          .exactly(11).times
+
+        expect(instance).to receive(:warn)
+          .with("No examples seeded yet, waiting...")
+          .exactly(10).times
+
+        expect(instance).to receive(:warn)
+          .with("No examples seeded, giving up!")
+
+        expect(subject).to eq(1)
+      end
+    end
+
     context "calls run_examples until NoMoreExamplesError" do
       before { allow(Specwrk::Client).to receive(:wait_for_server!) }
 
