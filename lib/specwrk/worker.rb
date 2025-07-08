@@ -88,6 +88,7 @@ module Specwrk
     attr_reader :running, :client, :executor
 
     def status
+      return 1 unless executor.example_processed
       return 1 if executor.failure
       return 1 if Specwrk.force_quit
 
