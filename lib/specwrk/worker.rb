@@ -17,6 +17,7 @@ module Specwrk
       @running = true
       @client = Client.new
       @executor = Executor.new
+      @seed_waits = ENV.fetch("SPECWRK_SEED_WAITS", "10").to_i
       @heartbeat_thread ||= Thread.new do
         thump
       end
@@ -40,7 +41,7 @@ module Specwrk
         @seed_wait_count ||= 0
         @seed_wait_count += 1
 
-        if @seed_wait_count <= 10
+        if @seed_wait_count <= @seed_waits
           warn "No examples seeded yet, waiting..."
           sleep 1
         else
