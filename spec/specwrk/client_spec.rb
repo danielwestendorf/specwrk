@@ -175,6 +175,15 @@ RSpec.describe Specwrk::Client do
       it { is_expected.to eq(examples) }
     end
 
+    context "when response is 204" do
+      before do
+        stub_request(:post, "#{base_uri}/pop").to_return(status: 204)
+      end
+
+      it "raises WaitingForSeedError" do
+        expect { subject }.to raise_error(Specwrk::WaitingForSeedError)
+      end
+    end
     context "when response is 404" do
       before do
         stub_request(:post, "#{base_uri}/pop").to_return(status: 404)

@@ -8,6 +8,7 @@ module Specwrk
   # HTTP Client Errors
   ClientError = Class.new(Error)
   UnhandledResponseError = Class.new(ClientError)
+  WaitingForSeedError = Class.new(ClientError)
   NoMoreExamplesError = Class.new(ClientError)
   CompletedAllExamplesError = Class.new(ClientError)
 
