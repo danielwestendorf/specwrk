@@ -4,12 +4,20 @@ require "specwrk/worker"
 
 RSpec.describe Specwrk::Worker do
   let(:client) { instance_double(Specwrk::Client, close: true, fetch_examples: %w[a.rb:1 b.rb:2]) }
-  let(:executor) { instance_double(Specwrk::Worker::Executor, final_output: tempfile, examples: %w[a.rb:1 b.rb:2], failure: failure) }
   let(:tempfile) { instance_double(Tempfile, rewind: true) }
-  let(:failure) { false }
   let(:thread) { instance_double(Thread, kill: true) }
 
   let(:instance) { described_class.new }
+  let(:failure) { false }
+  let(:example_processed) { true }
+
+  let(:executor) do
+    instance_double Specwrk::Worker::Executor,
+      final_output: tempfile,
+      examples: %w[a.rb:1 b.rb:2],
+      failure: failure,
+      example_processed: example_processed
+  end
 
   before do
     allow(Specwrk::Client).to receive(:new)
@@ -57,6 +65,19 @@ RSpec.describe Specwrk::Worker do
       it "warns and exits with status 1" do
         expect(instance).to receive(:warn)
           .with(a_string_including("stopped responding"))
+
+        expect(subject).to eq(1)
+      end
+    end
+
+    context "no examples processed" do
+      let(:example_processed) { nil }
+
+      before { allow(Specwrk::Client).to receive(:wait_for_server!) }
+
+      it "returns 1 when no examples were processed" do
+        expect(instance).to receive(:execute)
+          .and_raise(Specwrk::CompletedAllExamplesError)
 
         expect(subject).to eq(1)
       end
