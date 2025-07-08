@@ -99,14 +99,20 @@ RSpec.describe Specwrk::Web::Endpoints do
       it { expect { subject }.to change(processing_queue, :length).from(0).to(1) }
     end
 
+    context "no items in any queue" do
+      it { is_expected.to eq([204, {"Content-Type" => "text/plain"}, ["Waiting for sample to be seeded."]]) }
+    end
+
+    context "no items in the processing queue, but completed queue has items" do
+      before { completed_queue.merge!(2 => {id: 2, expected_run_time: 0}) }
+
+      it { is_expected.to eq([410, {"Content-Type" => "text/plain"}, ["That's a good lad. Run along now and go home."]]) }
+    end
+
     context "no items in the pending queue, but something in the processing queue" do
       before { processing_queue.merge!(2 => {id: 2, expected_run_time: 0}) }
 
       it { is_expected.to eq([404, {"Content-Type" => "text/plain"}, ["This is not the path you're looking for, 'ol chap..."]]) }
-    end
-
-    context "no items in the pending queue, no items in the processing queue" do
-      it { is_expected.to eq([410, {"Content-Type" => "text/plain"}, ["That's a good lad. Run along now and go home."]]) }
     end
   end
 end
