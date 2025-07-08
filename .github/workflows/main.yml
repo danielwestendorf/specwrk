@@ -28,3 +28,6 @@ jobs:
           bundler-cache: true
       - name: Run the default task
         run: bundle exec rake
+
+      - name: Run tests via specwrk
+        run: bundle exec specwrk start --count 2 spec/
