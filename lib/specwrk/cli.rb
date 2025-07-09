@@ -115,6 +115,7 @@ module Specwrk
         require "specwrk/list_examples"
         require "specwrk/client"
 
+        ENV["SPECWRK_SEED"] = "1"
         examples = ListExamples.new(dir).examples
 
         Client.wait_for_server!
@@ -198,6 +199,7 @@ module Specwrk
           require "specwrk/list_examples"
           require "specwrk/client"
 
+          ENV["SPECWRK_SEED"] = "1"
           examples = ListExamples.new(dir).examples
 
           status "Waiting for server to respond..."
