@@ -57,10 +57,10 @@ module Specwrk
       end
 
       def call(env)
-        request = Rack::Request.new(env)
+        env[:request] ||= Rack::Request.new(env)
 
-        route(method: request.request_method, path: request.path_info)
-          .new(request)
+        route(method: env[:request].request_method, path: env[:request].path_info)
+          .new(env[:request])
           .response
       end
 
