@@ -98,6 +98,21 @@ RSpec.describe Specwrk::Web::Endpoints do
         end
       end
 
+      context "completed queue is empty" do
+        let(:body) { JSON.generate([]) }
+
+        before do
+          processing_queue.clear
+          pending_queue.clear
+        end
+
+        it "doesn't try to dump the completed queue" do
+          expect(completed_queue).not_to receive(:dump_and_write)
+
+          subject
+        end
+      end
+
       context "pending and processing queues are empty" do
         before do
           processing_queue.delete(2)
