@@ -47,17 +47,18 @@ Arguments:
   DIR                               # Relative spec directory to run against
 
 Options:
-  --uri=VALUE                       # HTTP URI of the server to pull jobs from. Overrides SPECWRK_SRV_PORT. Default 5138., default: "https://localhost:5138"
-  --key=VALUE, -k VALUE             # Authentication key clients must use for access. Overrides SPECWRK_SRV_KEY. Default ''., default: ""
-  --run=VALUE, -r VALUE             # The run identifier for this job execution. Overrides SPECWRK_RUN. Default main., default: "main"
-  --timeout=VALUE, -t VALUE         # The amount of time to wait for the server to respond. Overrides SPECWRK_TIMEOUT. Default 5., default: "5"
-  --id=VALUE                        # The identifier for this worker. Default specwrk-worker(-COUNT_INDEX)., default: "specwrk-worker"
-  --count=VALUE, -c VALUE           # The number of worker processes you want to start. Default 1., default: 1
-  --output=VALUE, -o VALUE          # Directory where worker output is stored. Overrides SPECWRK_OUT. Default '.specwrk/'., default: ".specwrk/"
-  --port=VALUE, -p VALUE            # Server port. Overrides SPECWRK_SRV_PORT. Default 5138., default: "5138"
-  --bind=VALUE, -b VALUE            # Server bind address. Overrides SPECWRK_SRV_BIND. Default 127.0.0.1., default: "127.0.0.1"
-  --group-by=VALUE                  # How examples will be grouped for workers; fallback to file if no timings are found. Overrides SPECWERK_SRV_GROUP_BY. Default timings.: (file/timings), default: "timings"
-  --[no-]single-run                 # Act on shutdown requests from clients. Default: false., default: false
+  --uri=VALUE                       # HTTP URI of the server to pull jobs from. Overrides SPECWRK_SRV_URI, default: "http://localhost:5138"
+  --key=VALUE, -k VALUE             # Authentication key clients must use for access. Overrides SPECWRK_SRV_KEY, default: ""
+  --run=VALUE, -r VALUE             # The run identifier for this job execution. Overrides SPECWRK_RUN, default: "main"
+  --timeout=VALUE, -t VALUE         # The amount of time to wait for the server to respond. Overrides SPECWRK_TIMEOUT, default: "5"
+  --id=VALUE                        # The identifier for this worker. Default specwrk-worker(-COUNT_INDEX), default: "specwrk-worker"
+  --count=VALUE, -c VALUE           # The number of worker processes you want to start, default: 1
+  --output=VALUE, -o VALUE          # Directory where worker output is stored. Overrides SPECWRK_OUT, default: ".specwrk/"
+  --seed-waits=VALUE, -w VALUE      # Number of times the worker will wait for examples to be seeded to the server. 1sec between attempts. Overrides SPECWRK_SEED_WAITS, default: "10"
+  --port=VALUE, -p VALUE            # Server port. Overrides SPECWRK_SRV_PORT, default: "5138"
+  --bind=VALUE, -b VALUE            # Server bind address. Overrides SPECWRK_SRV_BIND, default: "127.0.0.1"
+  --group-by=VALUE                  # How examples will be grouped for workers; fallback to file if no timings are found. Overrides SPECWERK_SRV_GROUP_BY: (file/timings), default: "timings"
+  --[no-]single-seed-per-run        # Only allow one seed per run. Useful for CI where many nodes may seed at the same time, default: false
   --[no-]verbose                    # Run in verbose mode. Default false., default: false
   --help, -h                        # Print this help
 ```
@@ -77,13 +78,14 @@ Description:
   Start a queue server
 
 Options:
-  --port=VALUE, -p VALUE            # Server port. Overrides SPECWRK_SRV_PORT. Default 5138., default: "5138"
-  --bind=VALUE, -b VALUE            # Server bind address. Overrides SPECWRK_SRV_BIND. Default 127.0.0.1., default: "127.0.0.1"
-  --key=VALUE, -k VALUE             # Authentication key clients must use for access. Overrides SPECWRK_SRV_KEY. Default ''., default: ""
-  --output=VALUE, -o VALUE          # Directory where worker output is stored. Overrides SPECWRK_OUT. Default '.specwrk/'., default: ".specwrk/"
-  --group-by=VALUE                  # How examples will be grouped for workers; fallback to file if no timings are found. Overrides SPECWERK_SRV_GROUP_BY. Default timings.: (file/timings), default: "timings"
-  --[no-]single-run                 # Act on shutdown requests from clients. Default: false., default: false
+  --port=VALUE, -p VALUE            # Server port. Overrides SPECWRK_SRV_PORT, default: "5138"
+  --bind=VALUE, -b VALUE            # Server bind address. Overrides SPECWRK_SRV_BIND, default: "127.0.0.1"
+  --key=VALUE, -k VALUE             # Authentication key clients must use for access. Overrides SPECWRK_SRV_KEY, default: ""
+  --output=VALUE, -o VALUE          # Directory where worker output is stored. Overrides SPECWRK_OUT, default: ".specwrk/"
+  --group-by=VALUE                  # How examples will be grouped for workers; fallback to file if no timings are found. Overrides SPECWERK_SRV_GROUP_BY: (file/timings), default: "timings"
+  --[no-]single-seed-per-run        # Only allow one seed per run. Useful for CI where many nodes may seed at the same time, default: false
   --[no-]verbose                    # Run in verbose mode. Default false., default: false
+  --[no-]single-run                 # Act on shutdown requests from clients. Default: false., default: false
   --help, -h                        # Print this help
 ```
 
@@ -105,10 +107,10 @@ Arguments:
   DIR                               # Relative spec directory to run against
 
 Options:
-  --uri=VALUE                       # HTTP URI of the server to pull jobs from. Overrides SPECWRK_SRV_PORT. Default 5138., default: "https://localhost:5138"
-  --key=VALUE, -k VALUE             # Authentication key clients must use for access. Overrides SPECWRK_SRV_KEY. Default ''., default: ""
-  --run=VALUE, -r VALUE             # The run identifier for this job execution. Overrides SPECWRK_RUN. Default main., default: "main"
-  --timeout=VALUE, -t VALUE         # The amount of time to wait for the server to respond. Overrides SPECWRK_TIMEOUT. Default 5., default: "5"
+  --uri=VALUE                       # HTTP URI of the server to pull jobs from. Overrides SPECWRK_SRV_URI, default: "http://localhost:5138"
+  --key=VALUE, -k VALUE             # Authentication key clients must use for access. Overrides SPECWRK_SRV_KEY, default: ""
+  --run=VALUE, -r VALUE             # The run identifier for this job execution. Overrides SPECWRK_RUN, default: "main"
+  --timeout=VALUE, -t VALUE         # The amount of time to wait for the server to respond. Overrides SPECWRK_TIMEOUT, default: "5"
   --help, -h                        # Print this help
 ```
 
@@ -127,13 +129,14 @@ Description:
   Start one or more worker processes
 
 Options:
-  --id=VALUE                        # The identifier for this worker. Default specwrk-worker(-COUNT_INDEX)., default: "specwrk-worker"
-  --count=VALUE, -c VALUE           # The number of worker processes you want to start. Default 1., default: 1
-  --output=VALUE, -o VALUE          # Directory where worker output is stored. Overrides SPECWRK_OUT. Default '.specwrk/'., default: ".specwrk/"
-  --uri=VALUE                       # HTTP URI of the server to pull jobs from. Overrides SPECWRK_SRV_PORT. Default 5138., default: "https://localhost:5138"
-  --key=VALUE, -k VALUE             # Authentication key clients must use for access. Overrides SPECWRK_SRV_KEY. Default ''., default: ""
-  --run=VALUE, -r VALUE             # The run identifier for this job execution. Overrides SPECWRK_RUN. Default main., default: "main"
-  --timeout=VALUE, -t VALUE         # The amount of time to wait for the server to respond. Overrides SPECWRK_TIMEOUT. Default 5., default: "5"
+  --id=VALUE                        # The identifier for this worker. Default specwrk-worker(-COUNT_INDEX), default: "specwrk-worker"
+  --count=VALUE, -c VALUE           # The number of worker processes you want to start, default: 1
+  --output=VALUE, -o VALUE          # Directory where worker output is stored. Overrides SPECWRK_OUT, default: ".specwrk/"
+  --seed-waits=VALUE, -w VALUE      # Number of times the worker will wait for examples to be seeded to the server. 1sec between attempts. Overrides SPECWRK_SEED_WAITS, default: "10"
+  --uri=VALUE                       # HTTP URI of the server to pull jobs from. Overrides SPECWRK_SRV_URI, default: "http://localhost:5138"
+  --key=VALUE, -k VALUE             # Authentication key clients must use for access. Overrides SPECWRK_SRV_KEY, default: ""
+  --run=VALUE, -r VALUE             # The run identifier for this job execution. Overrides SPECWRK_RUN, default: "main"
+  --timeout=VALUE, -t VALUE         # The amount of time to wait for the server to respond. Overrides SPECWRK_TIMEOUT, default: "5"
   --help, -h                        # Print this help
 ```
 
@@ -158,9 +161,11 @@ Rails has had easy multi-process test setup for a while now by creating unique t
 ```
 
 ## CI
-1 server N nodes with N processes => 🏎️
+Run `specwrk` in CI in either a single-node or multi-node configuration.
 
-TODO!
+### Single-node, multi-process
+Single-node + multi-process is the easiest way to get started. Add it to your existing configuration
+
 
 ## Contributing
 

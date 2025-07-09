@@ -16,10 +16,10 @@ module Specwrk
       extend Hookable
 
       on_included do |base|
-        base.unique_option :uri, type: :string, default: ENV.fetch("SPECWRK_SRV_URI", "http://localhost:#{ENV.fetch("SPECWRK_SRV_PORT", "5138")}"), desc: "HTTP URI of the server to pull jobs from. Overrides SPECWRK_SRV_URI. Default http://localhost:5138."
-        base.unique_option :key, type: :string, default: ENV.fetch("SPECWRK_SRV_KEY", ""), aliases: ["-k"], desc: "Authentication key clients must use for access. Overrides SPECWRK_SRV_KEY. Default ''."
-        base.unique_option :run, type: :string, default: ENV.fetch("SPECWRK_RUN", "main"), aliases: ["-r"], desc: "The run identifier for this job execution. Overrides SPECWRK_RUN. Default main."
-        base.unique_option :timeout, type: :integer, default: ENV.fetch("SPECWRK_TIMEOUT", "5"), aliases: ["-t"], desc: "The amount of time to wait for the server to respond. Overrides SPECWRK_TIMEOUT. Default 5."
+        base.unique_option :uri, type: :string, default: ENV.fetch("SPECWRK_SRV_URI", "http://localhost:#{ENV.fetch("SPECWRK_SRV_PORT", "5138")}"), desc: "HTTP URI of the server to pull jobs from. Overrides SPECWRK_SRV_URI"
+        base.unique_option :key, type: :string, default: ENV.fetch("SPECWRK_SRV_KEY", ""), aliases: ["-k"], desc: "Authentication key clients must use for access. Overrides SPECWRK_SRV_KEY"
+        base.unique_option :run, type: :string, default: ENV.fetch("SPECWRK_RUN", "main"), aliases: ["-r"], desc: "The run identifier for this job execution. Overrides SPECWRK_RUN"
+        base.unique_option :timeout, type: :integer, default: ENV.fetch("SPECWRK_TIMEOUT", "5"), aliases: ["-t"], desc: "The amount of time to wait for the server to respond. Overrides SPECWRK_TIMEOUT"
       end
 
       on_setup do |uri:, key:, run:, timeout:, **|
@@ -34,10 +34,10 @@ module Specwrk
       extend Hookable
 
       on_included do |base|
-        base.unique_option :id, type: :string, default: "specwrk-worker", desc: "The identifier for this worker. Default specwrk-worker(-COUNT_INDEX)."
-        base.unique_option :count, type: :integer, default: 1, aliases: ["-c"], desc: "The number of worker processes you want to start. Default 1."
-        base.unique_option :output, type: :string, default: ENV.fetch("SPECWRK_OUT", ".specwrk/"), aliases: ["-o"], desc: "Directory where worker output is stored. Overrides SPECWRK_OUT. Default '.specwrk/'."
-        base.unique_option :seed_waits, type: :integer, default: ENV.fetch("SPECWRK_SEED_WAITS", "10"), aliases: ["-w"], desc: "Number of times the worker will wait for examples to be seeded to the server. 1sec between attempts. Overrides SPECWRK_SEED_WAITS. Default '10'."
+        base.unique_option :id, type: :string, default: "specwrk-worker", desc: "The identifier for this worker. Default specwrk-worker(-COUNT_INDEX)"
+        base.unique_option :count, type: :integer, default: 1, aliases: ["-c"], desc: "The number of worker processes you want to start"
+        base.unique_option :output, type: :string, default: ENV.fetch("SPECWRK_OUT", ".specwrk/"), aliases: ["-o"], desc: "Directory where worker output is stored. Overrides SPECWRK_OUT"
+        base.unique_option :seed_waits, type: :integer, default: ENV.fetch("SPECWRK_SEED_WAITS", "10"), aliases: ["-w"], desc: "Number of times the worker will wait for examples to be seeded to the server. 1sec between attempts. Overrides SPECWRK_SEED_WAITS"
       end
 
       on_setup do |id:, count:, output:, seed_waits:, **|
@@ -71,17 +71,16 @@ module Specwrk
       extend Hookable
 
       on_included do |base|
-        base.unique_option :port, type: :integer, default: ENV.fetch("SPECWRK_SRV_PORT", "5138"), aliases: ["-p"], desc: "Server port. Overrides SPECWRK_SRV_PORT. Default 5138."
-        base.unique_option :bind, type: :string, default: ENV.fetch("SPECWRK_SRV_BIND", "127.0.0.1"), aliases: ["-b"], desc: "Server bind address. Overrides SPECWRK_SRV_BIND. Default 127.0.0.1."
-        base.unique_option :key, type: :string, aliases: ["-k"], default: ENV.fetch("SPECWRK_SRV_KEY", ""), desc: "Authentication key clients must use for access. Overrides SPECWRK_SRV_KEY. Default ''."
-        base.unique_option :output, type: :string, default: ENV.fetch("SPECWRK_OUT", ".specwrk/"), aliases: ["-o"], desc: "Directory where worker output is stored. Overrides SPECWRK_OUT. Default '.specwrk/'."
-        base.unique_option :group_by, values: %w[file timings], default: ENV.fetch("SPECWERK_SRV_GROUP_BY", "timings"), desc: "How examples will be grouped for workers; fallback to file if no timings are found. Overrides SPECWERK_SRV_GROUP_BY. Default timings."
-        base.unique_option :single_run, type: :boolean, default: false, desc: "Act on shutdown requests from clients. Default: false."
-        base.unique_option :single_seed_per_run, type: :boolean, default: false, desc: "Only allow one seed per run. Useful for CI where many nodes may seed at the same time. Default: false."
+        base.unique_option :port, type: :integer, default: ENV.fetch("SPECWRK_SRV_PORT", "5138"), aliases: ["-p"], desc: "Server port. Overrides SPECWRK_SRV_PORT"
+        base.unique_option :bind, type: :string, default: ENV.fetch("SPECWRK_SRV_BIND", "127.0.0.1"), aliases: ["-b"], desc: "Server bind address. Overrides SPECWRK_SRV_BIND"
+        base.unique_option :key, type: :string, aliases: ["-k"], default: ENV.fetch("SPECWRK_SRV_KEY", ""), desc: "Authentication key clients must use for access. Overrides SPECWRK_SRV_KEY"
+        base.unique_option :output, type: :string, default: ENV.fetch("SPECWRK_OUT", ".specwrk/"), aliases: ["-o"], desc: "Directory where worker output is stored. Overrides SPECWRK_OUT"
+        base.unique_option :group_by, values: %w[file timings], default: ENV.fetch("SPECWERK_SRV_GROUP_BY", "timings"), desc: "How examples will be grouped for workers; fallback to file if no timings are found. Overrides SPECWERK_SRV_GROUP_BY"
+        base.unique_option :single_seed_per_run, type: :boolean, default: false, desc: "Only allow one seed per run. Useful for CI where many nodes may seed at the same time"
         base.unique_option :verbose, type: :boolean, default: false, desc: "Run in verbose mode. Default false."
       end
 
-      on_setup do |port:, bind:, output:, key:, single_run:, single_seed_per_run:, group_by:, verbose:, **|
+      on_setup do |port:, bind:, output:, key:, single_seed_per_run:, group_by:, verbose:, **|
         ENV["SPECWRK_OUT"] = Pathname.new(output).expand_path(Dir.pwd).to_s
         FileUtils.mkdir_p(ENV["SPECWRK_OUT"])
 
@@ -90,7 +89,6 @@ module Specwrk
         ENV["SPECWRK_SRV_PORT"] = port
         ENV["SPECWRK_SRV_BIND"] = bind
         ENV["SPECWRK_SRV_KEY"] = key
-        ENV["SPECWRK_SRV_SINGLE_RUN"] = "1" if single_run
         ENV["SPECWRK_SRV_SINGLE_SEED_PER_RUN"] = "1" if single_seed_per_run
         ENV["SPECWRK_SRV_GROUP_BY"] = group_by
       end
@@ -159,8 +157,11 @@ module Specwrk
       include Servable
 
       desc "Start a queue server"
+      option :single_run, type: :boolean, default: false, desc: "Act on shutdown requests from clients. Default: false."
 
-      def call(**args)
+      def call(single_run:, **args)
+        ENV["SPECWRK_SRV_SINGLE_RUN"] = "1" if single_run
+
         self.class.setup(**args)
 
         require "specwrk/web"
