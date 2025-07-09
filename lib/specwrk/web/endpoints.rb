@@ -50,6 +50,12 @@ module Specwrk
       # Base default response is 404
       NotFound = Class.new(Base)
 
+      class Health < Base
+        def response
+          ok
+        end
+      end
+
       class Heartbeat < Base
         def response
           ok

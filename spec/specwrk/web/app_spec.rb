@@ -93,6 +93,15 @@ RSpec.describe Specwrk::Web::App do
       end
     end
 
+    context "GET /health" do
+      let(:http_method) { "GET" }
+      let(:path) { "/health" }
+
+      before { stub_endpoint(Specwrk::Web::Endpoints::Health, 109) }
+
+      it { is_expected.to eq 109 }
+    end
+
     context "GET /heartbeat" do
       let(:http_method) { "GET" }
       let(:path) { "/heartbeat" }

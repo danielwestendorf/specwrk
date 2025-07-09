@@ -50,8 +50,8 @@ module Specwrk
           Rack::Builder.new do
             use Rack::Runtime
             use Specwrk::Web::Logger, $stdout
-            use Specwrk::Web::Auth          # global auth check
-            run Specwrk::Web::App.new       # your router
+            use Specwrk::Web::Auth, %w[/health] # global auth check
+            run Specwrk::Web::App.new           # your router
           end
         end
       end
@@ -66,6 +66,8 @@ module Specwrk
 
       def route(method:, path:)
         case [method, path]
+        when ["GET", "/health"]
+          Endpoints::Health
         when ["GET", "/heartbeat"]
           Endpoints::Heartbeat
         when ["POST", "/pop"]
