@@ -70,7 +70,7 @@ RSpec.describe Specwrk::Web::Endpoints do
       )
     end
 
-    let(:body) { JSON.generate([{id: 1, file_path: "a.rb:1", run_time: 0.1}]) }
+    let(:body) { JSON.generate([{id: 1, file_path: "a.rb:1", run_time: 0.1}, {id: 3, file_path: "a.rb:3", run_time: 0.1}]) }
 
     it { is_expected.to eq(ok) }
     it { expect { subject }.to change(processing_queue, :length).from(2).to(1) }

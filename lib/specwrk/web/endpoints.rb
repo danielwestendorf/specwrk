@@ -82,12 +82,14 @@ module Specwrk
         def response
           processing_queue.synchronize do |processing_queue_hash|
             payload.each do |example|
+              next unless processing_queue_hash.key?(example[:id])
+
               processing_queue_hash.delete(example[:id])
               completed_queue[example[:id]] = example
             end
           end
 
-          if pending_queue.length.zero? && processing_queue.length.zero? && ENV["SPECWRK_SRV_OUTPUT"]
+          if pending_queue.length.zero? && processing_queue.length.zero? && completed_queue.length.positive? && ENV["SPECWRK_SRV_OUTPUT"]
             completed_queue.dump_and_write(ENV["SPECWRK_SRV_OUTPUT"])
           end
 
