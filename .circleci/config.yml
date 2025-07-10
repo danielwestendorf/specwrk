@@ -1,5 +1,15 @@
 version: 2.1
 
+workflows:
+  test_workflow:
+    jobs:
+      - test
+      - specwrk-single-node
+      - specwrk-multi-node-prepare
+      - specwrk-multi-node:
+          requires:
+            - specwrk-multi-node-prepare
+
 jobs:
   test:
     docker:
@@ -8,27 +18,23 @@ jobs:
     steps:
       - checkout
 
-      # Restore cached gems (keyed by Gemfile.lock checksum)
       - restore_cache:
           keys:
             - v1-deps-{{ checksum "Gemfile" }}-{{ checksum "specwrk.gemspec" }}
             - v1-deps-{{ checksum "Gemfile" }}
             - v1-deps-
 
-      # Install dependencies
       - run:
           name: Install Gems
           command: |
             bundle config path vendor/bundle
             bundle install --jobs 4 --retry 2
 
-      # Save gems to cache
       - save_cache:
           paths:
             - vendor/bundle
           key: v1-deps-{{ checksum "Gemfile" }}-{{ checksum "specwrk.gemspec" }}
 
-      # Run your test suite
       - run:
           name: Run RSpec
           command: bundle exec rspec
@@ -40,32 +46,96 @@ jobs:
     steps:
       - checkout
 
-      # Restore cached gems (keyed by Gemfile.lock checksum)
       - restore_cache:
           keys:
             - v1-deps-{{ checksum "Gemfile" }}-{{ checksum "specwrk.gemspec" }}
             - v1-deps-{{ checksum "Gemfile" }}
             - v1-deps-
 
-      # Install dependencies
       - run:
           name: Install Gems
           command: |
             bundle config path vendor/bundle
             bundle install --jobs 4 --retry 2
 
-      # Save gems to cache
       - save_cache:
           paths:
             - vendor/bundle
           key: v1-deps-{{ checksum "Gemfile" }}-{{ checksum "specwrk.gemspec" }}
 
-      # Run your test suite
+      ## SPECWRK STEP ##
       - run:
           name: Run tests via specwrk start
           command: bundle exec specwrk start --count 2 spec/
-workflows:
-  test_workflow:
-    jobs:
-      - test
-      - specwrk-single-node
+      ## /SPECWRK STEP ##
+
+  specwrk-multi-node-prepare:
+    docker:
+      - image: cimg/ruby:3.4.4
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+            - gem-cache-{{ checksum "Gemfile" }}-{{ checksum "specwrk.gemspec" }}
+            - gem-cache-{{ checksum "Gemfile" }}
+            - gem-cache-
+
+      - run:
+          name: bundle install
+          command: |
+            bundle config path vendor/bundle
+            bundle install --jobs 4 --retry 2
+
+      - save_cache:
+          paths:
+            - vendor/bundle
+          key: gem-cache-{{ checksum "Gemfile" }}-{{ checksum "specwrk.gemspec" }}
+
+      ## SPECWRK STEP ##
+      - run:
+          name: Seed examples to specwrk server
+          command: |
+            bundle exec specwrk seed \
+              --uri "$SPECWRK_URI" \
+              --key "$SPECWRK_KEY" \
+              --run "$CIRCLE_WORKFLOW_ID" \
+              spec/
+
+      ## /SPECWRK STEP ##
+
+  specwrk-multi-node:
+    parallelism: 2
+    docker:
+      - image: cimg/ruby:3.4.4
+    working_directory: ~/project
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+            - v1-deps-{{ checksum "Gemfile" }}-{{ checksum "specwrk.gemspec" }}
+            - v1-deps-{{ checksum "Gemfile" }}
+            - v1-deps-
+
+      - run:
+          name: Install Gems
+          command: |
+            bundle config path vendor/bundle
+            bundle install --jobs 4 --retry 2
+
+      - save_cache:
+          paths:
+            - vendor/bundle
+          key: v1-deps-{{ checksum "Gemfile" }}-{{ checksum "specwrk.gemspec" }}
+
+      ## SPECWRK STEP ##
+      - run:
+          name: Run tests via specwrk work
+          command: |
+            bundle exec specwrk work \
+              --uri "$SPECWRK_URI" \
+              --key "$SPECWRK_KEY" \
+              --run "$CIRCLE_WORKFLOW_ID" \
+              --count 2
+      ## /SPECWRK STEP ##

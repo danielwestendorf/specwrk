@@ -62,4 +62,4 @@ jobs:
           SPECWRK_SRV_KEY: ${{ secrets.SPECWRK_SRV_KEY }}
           SPECWRK_SRV_URI: ${{ secrets.SPECWRK_SRV_URI }}
         run: bundle exec specwrk work --count 2
-      ## SPECWRK STEP ##
+      ## /SPECWRK STEP ##
