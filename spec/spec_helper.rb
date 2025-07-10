@@ -14,5 +14,7 @@ RSpec.configure do |config|
     c.syntax = :expect
   end
 
-  # config.before(:each) { sleep 1 }
+  if ENV["TEST_ENV_NUMBER"]
+    config.before(:each) { sleep 0.25 }
+  end
 end
