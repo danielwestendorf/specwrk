@@ -14,6 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      ## SPECWRK STEP ##
       - name: Restore specwrk
         uses: actions/cache@v4
         with:
@@ -23,6 +24,7 @@ jobs:
           restore-keys: |
             specwrk-${{ hashFiles('spec/**/*_spec.rb') }}
             specwrk-
+      ## /SPECWRK STEP ##
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
@@ -30,5 +32,7 @@ jobs:
           ruby-version: 3.4.4
           bundler-cache: true
 
+      ## SPECWRK STEP ##
       - name: Run tests via specwrk start
         run: bundle exec specwrk start --count 2 spec/
+      ## /SPECWRK STEP ##
