@@ -33,7 +33,39 @@ jobs:
           name: Run RSpec
           command: bundle exec rspec
 
+  specwrk-single-node:
+    docker:
+      - image: cimg/ruby:3.4.4
+    working_directory: ~/project
+    steps:
+      - checkout
+
+      # Restore cached gems (keyed by Gemfile.lock checksum)
+      - restore_cache:
+          keys:
+            - v1-deps-{{ checksum "Gemfile" }}-{{ checksum "specwrk.gemspec" }}
+            - v1-deps-{{ checksum "Gemfile" }}
+            - v1-deps-
+
+      # Install dependencies
+      - run:
+          name: Install Gems
+          command: |
+            bundle config path vendor/bundle
+            bundle install --jobs 4 --retry 2
+
+      # Save gems to cache
+      - save_cache:
+          paths:
+            - vendor/bundle
+          key: v1-deps-{{ checksum "Gemfile" }}-{{ checksum "specwrk.gemspec" }}
+
+      # Run your test suite
+      - run:
+          name: Run tests via specwrk start
+          command: bundle exec specwrk start --count 2 spec/
 workflows:
   test_workflow:
     jobs:
       - test
+      - specwrk-single-node
