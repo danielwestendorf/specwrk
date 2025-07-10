@@ -8,9 +8,8 @@ on:
   pull_request:
 
 jobs:
-  build:
+  specwrk-single-node:
     runs-on: ubuntu-latest
-    name: specwrk-single-node
 
     steps:
       - uses: actions/checkout@v4
