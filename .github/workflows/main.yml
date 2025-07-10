@@ -1,4 +1,4 @@
-name: Ruby
+name: specwrk
 
 on:
   push:
@@ -10,11 +10,11 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    name: Ruby ${{ matrix.ruby }}
+    name: specwrk
     strategy:
       matrix:
         ruby:
-          - "3.4.2"
+          - "3.4.4"
           - "3.3.0"
           - "3.2.0"
           - "3.1.0"
@@ -26,14 +26,9 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
-      - name: Run the default task
-        run: bundle exec rake
 
-      - name: Run tests via specwrk start
-        run: bundle exec specwrk start --count 2 spec/
-
-      - name: Run tests via specwrk and individual commands
-        run: |
-          bundle exec specwrk serve --single-run 2>&1 &
-          bundle exec specwrk seed spec
-          bundle exec specwrk work --count 2
+      - name: Standard
+        run: bundle exec rake standard
+      
+      - name: RSpec
+        run: bundle exec rspec
