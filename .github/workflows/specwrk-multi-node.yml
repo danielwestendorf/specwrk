@@ -1,0 +1,65 @@
+name: specwrk-multi-node
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.4.4
+          bundler-cache: true
+
+      ## SPECWRK STEP ##
+      - name: Seed examples to specwrk server
+        env:
+          SPECWRK_RUN: ${{ github.run_id }}-${{ github.run_attempt }}
+          SPECWRK_SRV_KEY: ${{ secrets.SPECWRK_SRV_KEY }}
+          SPECWRK_SRV_URI: ${{ secrets.SPECWRK_SRV_URI }}
+        run: bundle exec specwrk seed spec/
+      ## /SPECWRK STEP ##
+    
+  specwrk-multi-node:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    needs: [prepare]
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # [n] - where the n is a number of parallel jobs you want to run your tests on.
+        # Use a higher number if you have slow tests to split them between more parallel jobs.
+        # Remember to update the value of the `ci_node_index` below to (0..n-1).
+        ci_node_total: [2]
+        # Indexes for parallel jobs (starting from zero).
+        # E.g. use [0, 1] for 2 parallel jobs, [0, 1, 2] for 3 parallel jobs, etc.
+        ci_node_index: [0, 1]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.4.4
+          bundler-cache: true
+
+      ## SPECWRK STEP ##
+      - name: Run tests via specwrk work
+        env:
+          SPECWRK_RUN: ${{ github.run_id }}-${{ github.run_attempt }}
+          SPECWRK_SRV_KEY: ${{ secrets.SPECWRK_SRV_KEY }}
+          SPECWRK_SRV_URI: ${{ secrets.SPECWRK_SRV_URI }}
+        run: bundle exec specwrk work --count 2
+      ## SPECWRK STEP ##
