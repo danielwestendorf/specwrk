@@ -55,7 +55,7 @@ RSpec.describe Specwrk::Worker do
         expect(instance).to receive(:warn)
           .with(a_string_including("refusing connections"))
 
-        expect(subject).to eq(3)
+        expect(subject).to eq(1)
       end
     end
 
