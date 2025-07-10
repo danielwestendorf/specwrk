@@ -52,6 +52,13 @@ jobs:
             - v1-deps-{{ checksum "Gemfile" }}
             - v1-deps-
 
+      ## SPECWRK STEP ##
+      - restore_cache:
+          keys:
+            - specwrk-{{ .Branch }}
+            - specwrk-
+      ## /SPECWRK STEP ##
+          
       - run:
           name: Install Gems
           command: |
@@ -68,7 +75,14 @@ jobs:
           name: Run tests via specwrk start
           command: bundle exec specwrk start --count 2 spec/
       ## /SPECWRK STEP ##
-
+        
+      ## SPECWRK STEP ##
+      - save_cache:
+          paths:
+            - .specwrk/report.json
+          key: specwrk-{{ .Branch }}
+      ## /SPECWRK STEP ##
+        
   specwrk-multi-node-prepare:
     docker:
       - image: cimg/ruby:3.4.4

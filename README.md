@@ -30,7 +30,7 @@ Commands:
 ```
 
 ### `specwrk start -c 8 spec/`
-Indended for quick-adhoc runs in development. This command starts a queue server, seeds it with examples from the `spec/` directory, and starts `8` worker processes. It will report the ultimate success or failure.
+Intended for quick ad-hoc local host development or single-node CI runs. This command starts a queue server, seeds it with examples from the `spec/` directory, and starts `8` worker processes. It will report the ultimate success or failure.
 
 ```sh
 $ start --help
@@ -164,8 +164,13 @@ Rails has had easy multi-process test setup for a while now by creating unique t
 Run `specwrk` in CI in either a single-node or multi-node configuration.
 
 ### Single-node, multi-process
-Single-node + multi-process is the easiest way to get started. Add it to your existing configuration
+[GitHub Actions Example](https://github.com/danielwestendorf/specwrk/blob/main/.github/workflows/specwrk-single-node.yml)
+[CircleCI Example](https://github.com/danielwestendorf/specwrk/blob/main/.circleci/config.yml) (specwrk-single-node job)
 
+### Multi-node, multi-process
+[GitHub Actions Example](https://github.com/danielwestendorf/specwrk/blob/main/.github/workflows/specwrk-multi-node.yml)
+
+[CircleCI Example](https://github.com/danielwestendorf/specwrk/blob/main/.circleci/config.yml) (specwrk-multi-node-prepare, specwrk-multi-node jobs)
 
 ## Contributing
 
