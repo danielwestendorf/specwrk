@@ -3,11 +3,15 @@
 module Specwrk
   class Web
     class Logger
-      def initialize(app, out = $stdout)
-        @app, @out = app, out
+      def initialize(app, out = $stdout, ignored_paths = [])
+        @app = app
+        @out = out
+        @ignored_paths = ignored_paths
       end
 
       def call(env)
+        return @app.call(env) if @ignored_paths.include? env["PATH_INFO"]
+
         start_time = Time.now
         start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
         status, headers, body = @app.call(env)
