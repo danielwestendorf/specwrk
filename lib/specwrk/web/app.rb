@@ -49,7 +49,7 @@ module Specwrk
         def rackup
           Rack::Builder.new do
             use Rack::Runtime
-            use Specwrk::Web::Logger, $stdout
+            use Specwrk::Web::Logger, $stdout, %w[/health]
             use Specwrk::Web::Auth, %w[/health] # global auth check
             run Specwrk::Web::App.new           # your router
           end
