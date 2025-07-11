@@ -122,8 +122,10 @@ module Specwrk
         Client.new.seed(examples)
       rescue Errno::ECONNREFUSED
         puts "Server at #{ENV.fetch("SPECWRK_SRV_URI", "http://localhost:5138")} is refusing connections, exiting...#{ENV["SPECWRK_FLUSH_DELIMINATOR"]}"
+        exit 1
       rescue Errno::ECONNRESET
         puts "Server at #{ENV.fetch("SPECWRK_SRV_URI", "http://localhost:5138")} stopped responding to connections, exiting...#{ENV["SPECWRK_FLUSH_DELIMINATOR"]}"
+        exit 1
       end
     end
 
@@ -213,7 +215,10 @@ module Specwrk
           status "Samples seeded ✓"
         end
 
-        Specwrk.wait_for_pids_exit([seed_pid])
+        if Specwrk.wait_for_pids_exit([seed_pid]).value?(1)
+          Process.kill("INT", web_pid)
+          exit(1)
+        end
 
         return if Specwrk.force_quit
         status "Starting #{worker_count} workers..."

@@ -224,9 +224,8 @@ RSpec.describe Specwrk::Client do
         stub_request(:post, "#{base_uri}/complete").to_return(status: 500, body: "boom")
       end
 
-      it "returns an UnhandledResponseError instance" do
-        expect(subject).to be_a(Specwrk::UnhandledResponseError)
-        expect(subject.message).to include("500: boom")
+      it "raises an UnhandledResponseError" do
+        expect { subject }.to raise_error(Specwrk::UnhandledResponseError, /500: boom/)
       end
     end
   end
@@ -250,9 +249,8 @@ RSpec.describe Specwrk::Client do
         stub_request(:post, "#{base_uri}/seed").to_return(status: 500, body: "boom")
       end
 
-      it "returns an UnhandledResponseError instance" do
-        expect(subject).to be_a(Specwrk::UnhandledResponseError)
-        expect(subject.message).to include("500: boom")
+      it "raises an UnhandledResponseError" do
+        expect { subject }.to raise_error(Specwrk::UnhandledResponseError, /500: boom/)
       end
     end
   end

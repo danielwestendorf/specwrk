@@ -102,13 +102,13 @@ module Specwrk
     def complete_examples(examples)
       response = post "/complete", body: examples.to_json
 
-      (response.code == "200") ? true : UnhandledResponseError.new("#{response.code}: #{response.body}")
+      (response.code == "200") ? true : raise(UnhandledResponseError.new("#{response.code}: #{response.body}"))
     end
 
     def seed(examples)
       response = post "/seed", body: examples.to_json
 
-      (response.code == "200") ? true : UnhandledResponseError.new("#{response.code}: #{response.body}")
+      (response.code == "200") ? true : raise(UnhandledResponseError.new("#{response.code}: #{response.body}"))
     end
 
     private
