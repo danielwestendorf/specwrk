@@ -184,6 +184,9 @@ module Specwrk
         self.class.setup(**args)
         $stdout.sync = true
 
+        # nil this env var if it exists to prevent never-ending workers
+        ENV["SPECWRK_SRV_URI"] = nil
+
         web_pid = Process.fork do
           require "specwrk/web"
           require "specwrk/web/app"
