@@ -1,5 +1,12 @@
 FROM ruby:3.4-alpine
 
+RUN apk add --no-cache \
+      build-base \
+      ruby-dev \
+      linux-headers \
+      zlib-dev \
+      libffi-dev
+
 WORKDIR /app
 
 RUN mkdir .specwrk/
@@ -11,6 +18,9 @@ ARG GEMFILE=specwrk-$SPECWRK_VERSION.gem
 COPY $GEMFILE ./
 RUN gem install ./$GEMFILE --no-document
 RUN rm ./$GEMFILE
+
+RUN gem install puma
+COPY config.ru ./
 
 COPY docker/entrypoint.server.sh /usr/local/bin/entrypoint
 RUN chmod +x /usr/local/bin/entrypoint

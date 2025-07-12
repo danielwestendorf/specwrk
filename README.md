@@ -194,37 +194,8 @@ To accomplish this, a central queue server is required, examples must be explici
 Start a persistent Queue Server given one of the following methods
 - The explicit ruby command `bundle exec specwrk serve --port $PORT`
 - Via [docker image](https://hub.docker.com/repository/docker/danielwestendorf/specwrk-server/general): `docker run -e PORT=5139 -p 5139:5139 docker.io/danielwestendorf/specwrk-server:latest`
-- By mounting the app as an Rack app
-  ```ruby
-  require 'rack'
-  require 'specwrk/web'
+- By mounting the app as an Rack app (see `config.ru`)
 
-  app = Specwrk::Web.rackup   # this is a Rack::Builder instance
-
-  Rack::Server.start(
-    app:    app,              
-    server: 'webrick',        
-    Host:   '0.0.0.0',        
-    Port:   9292
-  )
-
-  # OR maybe
-  # Rack::Handler::WEBrick.run(app, Host: '0.0.0.0', Port: 9292)
-  # Rack::Handler::Puma.run(app, Host: '0.0.0.0', Port: 9292)
-
-  # OR maybe
-  # config.ru
-  require_relative 'lib/specwrk/web'
-
-  run Specwrk::Web.rackup
-
-  # OR maybe
-  # config/routes.rb
-  Rails.application.routes.draw do
-    # everything under /specwrk will be handled by your Rack::Builder
-    mount Specwrk::Web.rackup, at: '/specwrk'
-  end
-  ```
 ### Configuring your Queue Server
 - Secure your server with a key either with the `SPECWRK_SRV_KEY` environment variable or `--key` CLI option
 - Configure the server output to be a persisted volume so your timings survive between restarts with  the `SPECWRK_OUT` environment variable or `--out` CLI option 
