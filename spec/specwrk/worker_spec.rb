@@ -240,9 +240,12 @@ RSpec.describe Specwrk::Worker do
         allow(Specwrk).to receive(:force_quit)
           .and_return(false)
 
-        allow(instance).to receive(:sleep)
-          .with(1)
-          .and_raise("Boom")
+        sleep_count = 0
+
+        allow(instance).to receive(:sleep).with(1) do
+          raise "Boom" if sleep_count == 1
+          sleep_count += 1
+        end
       end
 
       it "last request nil" do
