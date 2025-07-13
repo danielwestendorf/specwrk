@@ -267,9 +267,9 @@ RSpec.describe Specwrk::Worker do
         expect { instance.thump }.to raise_error("Boom")
       end
 
-      it "last request > 10 sec ago" do
+      it "last request > 30 sec ago" do
         allow(client).to receive(:last_request_at)
-          .and_return(Time.now - 11)
+          .and_return(Time.now - 31)
 
         expect(client).to receive(:heartbeat)
           .and_return(true)
