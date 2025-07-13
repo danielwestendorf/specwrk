@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require "pathname"
+require "fileutils"
+
 require "webrick"
 require "rack"
 
@@ -21,9 +24,7 @@ module Specwrk
         def run!
           Process.setproctitle "specwrk-server"
 
-          if ENV["SPECWRK_SRV_LOG"]
-            $stdout.reopen(ENV["SPECWRK_SRV_LOG"], "w")
-          end
+          setup!
 
           server_opts = {
             Port: ENV.fetch("SPECWRK_SRV_PORT", "5138").to_i,
@@ -46,10 +47,26 @@ module Specwrk
           end
         end
 
+        def setup!
+          if ENV["SPECWRK_OUT"]
+
+            FileUtils.mkdir_p(ENV["SPECWRK_OUT"])
+            ENV["SPECWRK_SRV_LOG"] ||= Pathname.new(File.join(ENV["SPECWRK_OUT"], "server.log")).to_s unless ENV["SPECWRK_SRV_VERBOSE"]
+            ENV["SPECWRK_SRV_OUTPUT"] ||= Pathname.new(File.join(ENV["SPECWRK_OUT"], "report.json")).expand_path(Dir.pwd).to_s
+          end
+
+          if ENV["SPECWRK_SRV_LOG"]
+            $stdout.reopen(ENV["SPECWRK_SRV_LOG"], "w")
+          end
+        end
+
         def rackup
           Rack::Builder.new do
-            use Rack::Runtime
-            use Specwrk::Web::Logger, $stdout, %w[/health]
+            if ENV["SPECWRK_SRV_VERBOSE"]
+              use Rack::Runtime
+              use Specwrk::Web::Logger, $stdout, %w[/health]
+            end
+
             use Specwrk::Web::Auth, %w[/health] # global auth check
             run Specwrk::Web::App.new           # your router
           end

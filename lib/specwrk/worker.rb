@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "stringio"
+require "fileutils"
 
 require "specwrk/client"
 require "specwrk/worker/executor"
@@ -13,6 +14,7 @@ module Specwrk
 
     def initialize
       Process.setproctitle ENV.fetch("SPECWRK_ID", "specwrk-worker")
+      FileUtils.mkdir_p(ENV["SPECWRK_OUT"]) if ENV["SPECWRK_OUT"]
 
       @running = true
       @client = Client.new

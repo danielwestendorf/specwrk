@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "pathname"
-require "fileutils"
 
 require "dry/cli"
 
@@ -45,7 +44,6 @@ module Specwrk
         ENV["SPECWRK_COUNT"] = count.to_s
         ENV["SPECWRK_SEED_WAITS"] = seed_waits.to_s
         ENV["SPECWRK_OUT"] = Pathname.new(output).expand_path(Dir.pwd).to_s
-        FileUtils.mkdir_p(ENV["SPECWRK_OUT"])
       end
 
       def start_workers
@@ -80,16 +78,13 @@ module Specwrk
         base.unique_option :verbose, type: :boolean, default: false, desc: "Run in verbose mode. Default false."
       end
 
-      on_setup do |port:, bind:, output:, key:, single_seed_per_run:, group_by:, verbose:, **|
+      on_setup do |port:, bind:, output:, key:, group_by:, verbose:, **|
         ENV["SPECWRK_OUT"] = Pathname.new(output).expand_path(Dir.pwd).to_s
-        FileUtils.mkdir_p(ENV["SPECWRK_OUT"])
+        ENV["SPECWRK_SRV_VERBOSE"] = "1" if verbose
 
-        ENV["SPECWRK_SRV_LOG"] ||= Pathname.new(File.join(ENV["SPECWRK_OUT"], "server.log")).to_s if output && !verbose
-        ENV["SPECWRK_SRV_OUTPUT"] ||= Pathname.new(File.join(ENV["SPECWRK_OUT"], "report.json")).expand_path(Dir.pwd).to_s if output
         ENV["SPECWRK_SRV_PORT"] = port
         ENV["SPECWRK_SRV_BIND"] = bind
         ENV["SPECWRK_SRV_KEY"] = key
-        ENV["SPECWRK_SRV_SINGLE_SEED_PER_RUN"] = "1" if single_seed_per_run
         ENV["SPECWRK_SRV_GROUP_BY"] = group_by
       end
     end
