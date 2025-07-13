@@ -242,7 +242,7 @@ RSpec.describe Specwrk::Worker do
 
         sleep_count = 0
 
-        allow(instance).to receive(:sleep).with(1) do
+        allow(instance).to receive(:sleep).with(10) do
           raise "Boom" if sleep_count == 1
           sleep_count += 1
         end
