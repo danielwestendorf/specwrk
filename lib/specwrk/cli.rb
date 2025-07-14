@@ -115,6 +115,8 @@ module Specwrk
 
         Client.wait_for_server!
         Client.new.seed(examples)
+        file_count = examples.group_by { |e| e[:file_path] }.keys.size
+        puts "🌱 Seeded #{examples.size} examples across #{file_count} files"
       rescue Errno::ECONNREFUSED
         puts "Server at #{ENV.fetch("SPECWRK_SRV_URI", "http://localhost:5138")} is refusing connections, exiting...#{ENV["SPECWRK_FLUSH_DELIMINATOR"]}"
         exit 1
