@@ -146,25 +146,7 @@ module Specwrk
 
       class Shutdown < Base
         def response
-          if ENV["SPECWRK_SRV_SINGLE_RUN"]
-            interupt!
-          elsif processing_queue.length.positive?
-            # Push any processing jobs back into the pending queue
-            processing_queue.synchronize do |processing_queue_hash|
-              pending_queue.synchronize do |pending_queue_hash|
-                processing_queue_hash.each do |id, example|
-                  pending_queue_hash[id] = example
-                  processing_queue_hash.delete(id)
-                end
-              end
-            end
-
-          elsif processing_queue.length.zero? && pending_queue.length.zero?
-            # All done, we can clear the completed queue
-            completed_queue.clear
-          end
-
-          # TODO: clear any zombie queues
+          interupt! if ENV["SPECWRK_SRV_SINGLE_RUN"]
 
           [200, {"Content-Type" => "text/plain"}, ["✌️"]]
         end

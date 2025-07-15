@@ -13,6 +13,7 @@ rescue LoadError
   require "rack/handler/webrick"
 end
 
+require "specwrk/web"
 require "specwrk/web/logger"
 require "specwrk/web/auth"
 require "specwrk/web/endpoints"
@@ -20,6 +21,8 @@ require "specwrk/web/endpoints"
 module Specwrk
   class Web
     class App
+      REAP_INTERVAL = 330 # HTTP connection timeout + some buffer
+
       class << self
         def run!
           Process.setproctitle "specwrk-server"
@@ -73,6 +76,10 @@ module Specwrk
         end
       end
 
+      def initialize
+        @reaper_thread = Thread.new { reaper } unless ENV["SPECWRK_SRV_SINGLE_RUN"]
+      end
+
       def call(env)
         env[:request] ||= Rack::Request.new(env)
 
@@ -99,6 +106,26 @@ module Specwrk
           Endpoints::Shutdown
         else
           Endpoints::NotFound
+        end
+      end
+
+      def reaper
+        until Specwrk.force_quit
+          sleep REAP_INTERVAL
+
+          reap
+        end
+      end
+
+      def reap
+        Web::WORKERS.each do |run, workers|
+          most_recent_last_seen_at = workers.map { |id, worker| worker[:last_seen_at] }.max
+          next unless most_recent_last_seen_at
+
+          # Don't consider runs which aren't at least REAP_INTERVAL sec stale
+          if most_recent_last_seen_at < Time.now - REAP_INTERVAL
+            Web.clear_run_queues(run)
+          end
         end
       end
     end
