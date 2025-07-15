@@ -6,6 +6,16 @@ RSpec.describe Specwrk::Client do
   let(:base_uri) { "http://localhost:5138" }
   let(:srv_key) { "secret-key" }
   let(:run_id) { "run-123" }
+  let(:worker_id) { "specwrk-worker-0-1" }
+
+  let(:headers) do
+    {
+      "User-Agent" => "Specwrk/#{Specwrk::VERSION}",
+      "Authorization" => "Bearer #{srv_key}",
+      "X-Specwrk-Run" => run_id,
+      "X-Specwrk-Id" => worker_id
+    }
+  end
 
   around do |ex|
     previous_net_http = Specwrk.net_http
@@ -20,7 +30,8 @@ RSpec.describe Specwrk::Client do
     stub_const("ENV", ENV.to_h.merge(
       "SPECWRK_SRV_URI" => base_uri,
       "SPECWRK_SRV_KEY" => srv_key,
-      "SPECWRK_RUN" => run_id
+      "SPECWRK_RUN" => run_id,
+      "SPECWRK_ID" => worker_id
     ))
   end
 
@@ -143,7 +154,7 @@ RSpec.describe Specwrk::Client do
     context "when heartbeat returns 200" do
       before do
         stub_request(:get, "#{base_uri}/heartbeat")
-          .with(headers: {"Authorization" => "Bearer #{srv_key}", "X-Specwrk-Run" => run_id})
+          .with(headers: headers)
           .to_return(status: 200)
       end
 
@@ -169,6 +180,7 @@ RSpec.describe Specwrk::Client do
 
       before do
         stub_request(:post, "#{base_uri}/pop")
+          .with(headers: headers)
           .to_return(status: 200, body: examples.to_json)
       end
 
@@ -211,9 +223,11 @@ RSpec.describe Specwrk::Client do
     let(:client) { described_class.new }
     let(:payload) { [{id: 1}] }
 
-    context "when response is 202" do
+    context "when response is 200" do
       before do
-        stub_request(:post, "#{base_uri}/complete").to_return(status: 200)
+        stub_request(:post, "#{base_uri}/complete")
+          .with(headers: headers)
+          .to_return(status: 200)
       end
 
       it { is_expected.to be true }
@@ -236,9 +250,11 @@ RSpec.describe Specwrk::Client do
     let(:client) { described_class.new }
     let(:payload) { [{id: 1}] }
 
-    context "when response is 202" do
+    context "when response is 200" do
       before do
-        stub_request(:post, "#{base_uri}/seed").to_return(status: 200)
+        stub_request(:post, "#{base_uri}/seed")
+          .with(headers: headers)
+          .to_return(status: 200)
       end
 
       it { is_expected.to be true }

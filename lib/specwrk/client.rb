@@ -150,7 +150,9 @@ module Specwrk
 
     def default_headers
       @default_headers ||= {}.tap do |h|
+        h["User-Agent"] = "Specwrk/#{VERSION}"
         h["Authorization"] = "Bearer #{ENV["SPECWRK_SRV_KEY"]}" if ENV["SPECWRK_SRV_KEY"]
+        h["X-Specwrk-Id"] = ENV.fetch("SPECWRK_ID", "specwrk-client")
         h["X-Specwrk-Run"] = ENV["SPECWRK_RUN"] if ENV["SPECWRK_RUN"]
         h["Content-Type"] = "application/json"
       end
