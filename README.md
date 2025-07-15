@@ -129,7 +129,7 @@ Description:
   Start one or more worker processes
 
 Options:
-  --id=VALUE                        # The identifier for this worker. Default specwrk-worker(-COUNT_INDEX), default: "specwrk-worker"
+  --id=VALUE                        # The identifier for this worker. Overrides SPECWRK_ID. If none provided one in the format of specwrk-worker-8_RAND_CHARS-COUNT_INDEX will be used
   --count=VALUE, -c VALUE           # The number of worker processes you want to start, default: 1
   --output=VALUE, -o VALUE          # Directory where worker output is stored. Overrides SPECWRK_OUT, default: ".specwrk/"
   --seed-waits=VALUE, -w VALUE      # Number of times the worker will wait for examples to be seeded to the server. 1sec between attempts. Overrides SPECWRK_SEED_WAITS, default: "10"

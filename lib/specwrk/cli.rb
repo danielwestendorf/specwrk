@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "pathname"
+require "securerandom"
 
 require "dry/cli"
 
@@ -33,14 +34,15 @@ module Specwrk
       extend Hookable
 
       on_included do |base|
-        base.unique_option :id, type: :string, default: "specwrk-worker", desc: "The identifier for this worker. Default specwrk-worker(-COUNT_INDEX)"
+        base.unique_option :id, type: :string, desc: "The identifier for this worker. Overrides SPECWRK_ID. If none provided one in the format of specwrk-worker-8_RAND_CHARS-COUNT_INDEX will be used"
         base.unique_option :count, type: :integer, default: 1, aliases: ["-c"], desc: "The number of worker processes you want to start"
         base.unique_option :output, type: :string, default: ENV.fetch("SPECWRK_OUT", ".specwrk/"), aliases: ["-o"], desc: "Directory where worker output is stored. Overrides SPECWRK_OUT"
         base.unique_option :seed_waits, type: :integer, default: ENV.fetch("SPECWRK_SEED_WAITS", "10"), aliases: ["-w"], desc: "Number of times the worker will wait for examples to be seeded to the server. 1sec between attempts. Overrides SPECWRK_SEED_WAITS"
       end
 
-      on_setup do |id:, count:, output:, seed_waits:, **|
-        ENV["SPECWRK_ID"] = id
+      on_setup do |count:, output:, seed_waits:, id: "specwrk-worker-#{SecureRandom.uuid[0, 8]}", **|
+        ENV["SPECWRK_ID"] ||= id # Unique default. Don't override the ENV value here
+
         ENV["SPECWRK_COUNT"] = count.to_s
         ENV["SPECWRK_SEED_WAITS"] = seed_waits.to_s
         ENV["SPECWRK_OUT"] = Pathname.new(output).expand_path(Dir.pwd).to_s
