@@ -8,6 +8,9 @@ module Specwrk
       class Base
         def initialize(request)
           @request = request
+
+          worker[:first_seen_at] ||= Time.now
+          worker[:last_seen_at] = Time.now
         end
 
         def response
@@ -44,6 +47,14 @@ module Specwrk
 
         def completed_queue
           Web::COMPLETED_QUEUES[request.get_header("HTTP_X_SPECWRK_RUN")]
+        end
+
+        def workers
+          Web::WORKERS[request.get_header("HTTP_X_SPECWRK_RUN")]
+        end
+
+        def worker
+          workers[request.get_header("HTTP_X_SPECWRK_ID")]
         end
       end
 

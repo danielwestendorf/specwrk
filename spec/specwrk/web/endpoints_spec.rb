@@ -9,15 +9,17 @@ RSpec.describe Specwrk::Web::Endpoints do
   subject { response }
 
   let(:request) { Rack::Request.new(env) }
-  let(:env) { {"rack.input" => StringIO.new(body), "HTTP_X_SPECWRK_RUN" => run} }
+  let(:env) { {"rack.input" => StringIO.new(body), "HTTP_X_SPECWRK_RUN" => run, "HTTP_X_SPECWRK_ID" => worker_id} }
   let(:body) { "" }
   let(:run) { "main" }
+  let(:worker_id) { "foobar-0" }
   let(:response) { described_class.new(request).response }
   let(:ok) { [200, {"Content-Type" => "text/plain"}, ["OK, 'ol chap"]] }
 
   let(:pending_queue) { Specwrk::Web::PENDING_QUEUES[run] }
   let(:processing_queue) { Specwrk::Web::PROCESSING_QUEUES[run] }
   let(:completed_queue) { Specwrk::Web::COMPLETED_QUEUES[run] }
+  let(:worker) { Specwrk::Web::WORKERS[run][worker_id] }
 
   let(:env_vars) { {"SPECWRK_SRV_OUTPUT" => ".non-existant.json"} }
 
@@ -29,9 +31,23 @@ RSpec.describe Specwrk::Web::Endpoints do
     Specwrk::Web.clear_queues
   end
 
-  describe Specwrk::Web::Endpoints::Heartbeat do
-    let(:env) { {} }
+  describe Specwrk::Web::Endpoints::Base do
+    it "sets the worker metadata at first look" do
+      expect { subject }.to change(worker, :itself).from({}).to(first_seen_at: instance_of(Time), last_seen_at: instance_of(Time))
+    end
 
+    it "update the worker metadata at subsequent look" do
+      worker[:first_seen_at] = first_seen_at = Time.now - 100
+      worker[:last_seen_at] = last_seen_at = Time.now - 100
+
+      subject
+
+      expect(worker[:first_seen_at]).to eq(first_seen_at)
+      expect(worker[:last_seen_at]).not_to eq(last_seen_at)
+    end
+  end
+
+  describe Specwrk::Web::Endpoints::Heartbeat do
     it { is_expected.to eq(ok) }
   end
 
