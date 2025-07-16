@@ -38,7 +38,7 @@ module Specwrk
         end
 
         def pending_queue
-          Web::PENDING_QUEUES[request.get_header("HTTP_X_SPECWRK_RUN")]
+          Web::PENDING_QUEUES[run_id]
         end
 
         def processing_queue
@@ -55,6 +55,10 @@ module Specwrk
 
         def worker
           workers[request.get_header("HTTP_X_SPECWRK_ID")]
+        end
+
+        def run_id
+          request.get_header("HTTP_X_SPECWRK_RUN")
         end
       end
 
@@ -98,8 +102,8 @@ module Specwrk
             end
           end
 
-          if pending_queue.length.zero? && processing_queue.length.zero? && completed_queue.length.positive? && ENV["SPECWRK_SRV_OUTPUT"]
-            completed_queue.dump_and_write(ENV["SPECWRK_SRV_OUTPUT"])
+          if pending_queue.length.zero? && processing_queue.length.zero? && completed_queue.length.positive? && ENV["SPECWRK_OUT"]
+            completed_queue.dump_and_write(File.join(ENV["SPECWRK_OUT"], "report-#{run_id}.json").to_s)
           end
 
           ok
