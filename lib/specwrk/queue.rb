@@ -40,8 +40,6 @@ module Specwrk
   end
 
   class PendingQueue < Queue
-    attr_reader :previous_run_times
-
     def shift_bucket
       return bucket_by_file unless previous_run_times
 
@@ -59,17 +57,22 @@ module Specwrk
       previous_run_times.dig(:meta, :average_run_time)
     end
 
-    # TODO: move reading the file to the getter method
-    def previous_run_times_file=(path)
-      return unless path
-      return unless File.exist? path
+    def previous_run_times
+      return unless ENV["SPECWRK_OUT"]
 
-      File.open(path, "r") do |file|
-        file.flock(File::LOCK_EX)
+      @previous_run_times ||= begin
+        return unless previous_run_times_file_path
+        return unless File.exist? previous_run_times_file_path
 
-        @previous_run_times = JSON.parse(file.read, symbolize_names: true)
+        raw_data = File.open(previous_run_times_file_path, "r") do |file|
+          file.flock(File::LOCK_SH)
+          file.read
+        end
 
-        file.flock(File::LOCK_UN)
+        @previous_run_times = JSON.parse(raw_data, symbolize_names: true)
+      rescue JSON::ParserError => e
+        warn "#{e.inspect} in file #{previous_run_times_file_path}"
+        nil
       end
     end
 
@@ -83,6 +86,15 @@ module Specwrk
     end
 
     private
+
+    # We want the most recently modified run time file
+    # report files are prefixed with a timestamp, and Dir.glob should order
+    # alphanumericly
+    def previous_run_times_file_path
+      return unless ENV["SPECWRK_OUT"]
+
+      @previous_run_times_file_path ||= Dir.glob(File.join(ENV["SPECWRK_OUT"], "report-*.json")).first
+    end
 
     # Take elements from the hash where the file_path is the same
     def bucket_by_file

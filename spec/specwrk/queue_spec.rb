@@ -32,34 +32,70 @@ RSpec.describe Specwrk::Queue do
 end
 
 RSpec.describe Specwrk::PendingQueue do
-  describe "#previous_run_times_file=" do
-    subject { instance.previous_run_times_file = file_path }
+  describe "#previous_run_times" do
+    subject { instance.previous_run_times }
 
     let(:instance) { described_class.new }
+    let(:env) { {"SPECWRK_OUT" => Dir.tmpdir} }
 
-    context "when file exists" do
-      let(:json_data) { {file_totals: {"a.rb" => 1.0, "b.rb" => 3.0}, meta: {average_run_time: 2.0}} }
-      let(:file_path) { tempfile.path }
+    before { stub_const("ENV", env) }
 
-      let(:tempfile) do
-        Tempfile.new("previous_run_times").tap do |f|
-          f.write(JSON.generate(json_data))
-          f.flush
+    context "when SPECWRK_OUT is not set" do
+      let(:env) { {} }
+
+      it { is_expected.to be_nil }
+    end
+
+    context "when previous_run_times_file_path returns no path" do
+      before do
+        allow(instance).to receive(:previous_run_times_file_path).and_return(nil)
+      end
+
+      it { is_expected.to be_nil }
+    end
+
+    context "when previous_run_times_file_path returns a non-existent path" do
+      let(:fake_path) { "/tmp/does_not_exist.json" }
+
+      before do
+        allow(instance).to receive(:previous_run_times_file_path).and_return(fake_path)
+      end
+
+      it { is_expected.to be_nil }
+    end
+
+    context "when the file exists" do
+      let(:tmp_file) { File.join(Dir.tmpdir, "#{SecureRandom.uuid}.json") }
+      let(:data) { {foo: "bar", count: 5} }
+      let(:data_string) { data.to_json }
+
+      before do
+        allow(instance).to receive(:previous_run_times_file_path).and_return(tmp_file)
+        File.write(tmp_file, data_string)
+      end
+
+      after { FileUtils.rm_f(tmp_file) }
+
+      context "handles json parsing errors" do
+        let(:data_string) { "fff" }
+
+        it "warns" do
+          expect(instance).to receive(:warn)
+            .with("#<JSON::ParserError: unexpected token 'fff' at line 1 column 1> in file #{tmp_file}")
+
+          expect { subject }.not_to raise_error
         end
       end
 
-      it "loads previous_run_times" do
-        expect { subject }.to change(instance, :previous_run_times)
-          .from(nil)
-          .to(instance_of(Hash))
+      context "reads and parses the JSON into a symbolized hash" do
+        it { is_expected.to eq(data) }
       end
-    end
 
-    context "when file does not exist" do
-      let(:file_path) { "foobar" }
-
-      it "does not raise an error" do
-        expect { subject }.not_to raise_error
+      context "memoizes the result" do
+        it "only parses once" do
+          expect(File).to receive(:open).once.and_call_original
+          2.times { instance.previous_run_times }
+        end
       end
     end
   end
@@ -89,7 +125,7 @@ RSpec.describe Specwrk::PendingQueue do
       }
     end
 
-    before { instance.instance_variable_set(:@previous_run_times, previous_run_times) }
+    before { allow(instance).to receive(:previous_run_times).and_return(previous_run_times) }
 
     # d.rb:1 is first because its run time is unknown, so we assume it is slowe
     # c.rb:1 is second because its run time is the highest known run time
@@ -223,13 +259,15 @@ RSpec.describe Specwrk::PendingQueue do
       }
     end
 
-    context "with previous_run_times" do
-      before { instance.instance_variable_set(:@previous_run_times, previous_run_times) }
+    before { allow(instance).to receive(:previous_run_times).and_return(previous_run_times) }
 
+    context "with previous_run_times" do
       it { is_expected.to eq(42) }
     end
 
     context "without previous_run_times" do
+      let(:previous_run_times) { nil }
+
       it { is_expected.to eq(1) }
     end
   end

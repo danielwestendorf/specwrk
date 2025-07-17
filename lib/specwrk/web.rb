@@ -4,7 +4,7 @@ require "specwrk/queue"
 
 module Specwrk
   class Web
-    PENDING_QUEUES = Queue.new { |h, key| h[key] = PendingQueue.new.tap { |q| q.previous_run_times_file = ENV["SPECWRK_SRV_OUTPUT"] } }
+    PENDING_QUEUES = Queue.new { |h, key| h[key] = PendingQueue.new }
     PROCESSING_QUEUES = Queue.new { |h, key| h[key] = Queue.new }
     COMPLETED_QUEUES = Queue.new { |h, key| h[key] = CompletedQueue.new }
     WORKERS = Hash.new { |h, key| h[key] = Hash.new { |h, key| h[key] = {} } }

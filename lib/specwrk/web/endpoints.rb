@@ -103,7 +103,7 @@ module Specwrk
           end
 
           if pending_queue.length.zero? && processing_queue.length.zero? && completed_queue.length.positive? && ENV["SPECWRK_OUT"]
-            completed_queue.dump_and_write(File.join(ENV["SPECWRK_OUT"], "report-#{run_id}.json").to_s)
+            completed_queue.dump_and_write(File.join(ENV["SPECWRK_OUT"], "#{Time.now.strftime("%Y%m%dT%H%M%S")}-report-#{run_id}.json").to_s)
           end
 
           ok
