@@ -75,9 +75,24 @@ RSpec.describe Specwrk::Worker do
 
       before { allow(Specwrk::Client).to receive(:wait_for_server!) }
 
-      it "returns 1 when no examples were processed" do
+      it "returns 0 when no examples were processed, but server signals all examples completed" do
         expect(instance).to receive(:execute)
           .and_raise(Specwrk::CompletedAllExamplesError)
+
+        expect(subject).to eq(0)
+      end
+
+      it "returns 1 when no examples were processed, but server did not signal all examples completed" do
+        expect(instance).to receive(:sleep)
+          .with(1)
+          .exactly(10).times
+
+        expect(instance).to receive(:warn)
+          .exactly(11).times
+
+        expect(instance).to receive(:execute)
+          .and_raise(Specwrk::WaitingForSeedError)
+          .exactly(11).times
 
         expect(subject).to eq(1)
       end

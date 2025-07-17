@@ -19,6 +19,7 @@ module Specwrk
       @running = true
       @client = Client.new
       @executor = Executor.new
+      @all_examples_completed = false
       @seed_waits = ENV.fetch("SPECWRK_SEED_WAITS", "10").to_i
       @heartbeat_thread ||= Thread.new do
         thump
@@ -33,6 +34,7 @@ module Specwrk
 
         execute
       rescue CompletedAllExamplesError
+        @all_examples_completed = true
         break
       rescue NoMoreExamplesError
         # Wait for the other processes (workers) on the same host to finish
@@ -102,7 +104,7 @@ module Specwrk
     attr_reader :running, :client, :executor
 
     def status
-      return 1 unless executor.example_processed
+      return 1 if !executor.example_processed && !@all_examples_completed
       return 1 if executor.failure
       return 1 if Specwrk.force_quit
 
