@@ -22,11 +22,11 @@ module Specwrk
         attr_reader :request
 
         def not_found
-          [404, {"Content-Type" => "text/plain"}, ["This is not the path you're looking for, 'ol chap..."]]
+          [404, {"content-type" => "text/plain"}, ["This is not the path you're looking for, 'ol chap..."]]
         end
 
         def ok
-          [200, {"Content-Type" => "text/plain"}, ["OK, 'ol chap"]]
+          [200, {"content-type" => "text/plain"}, ["OK, 'ol chap"]]
         end
 
         def payload
@@ -125,11 +125,11 @@ module Specwrk
           end
 
           if @examples.length.positive?
-            [200, {"Content-Type" => "application/json"}, [JSON.generate(@examples)]]
+            [200, {"content-type" => "application/json"}, [JSON.generate(@examples)]]
           elsif pending_queue.length.zero? && processing_queue.length.zero? && completed_queue.length.zero?
-            [204, {"Content-Type" => "text/plain"}, ["Waiting for sample to be seeded."]]
+            [204, {"content-type" => "text/plain"}, ["Waiting for sample to be seeded."]]
           elsif completed_queue.length.positive? && processing_queue.length.zero?
-            [410, {"Content-Type" => "text/plain"}, ["That's a good lad. Run along now and go home."]]
+            [410, {"content-type" => "text/plain"}, ["That's a good lad. Run along now and go home."]]
           else
             not_found
           end
@@ -139,9 +139,9 @@ module Specwrk
       class Report < Base
         def response
           if data
-            [200, {"Content-Type" => "application/json"}, [data]]
+            [200, {"content-type" => "application/json"}, [data]]
           else
-            [404, {"Content-Type" => "text/plain"}, ["Unable to report on run #{run_id}; no file matching #{"*-report-#{run_id}.json"}"]]
+            [404, {"content-type" => "text/plain"}, ["Unable to report on run #{run_id}; no file matching #{"*-report-#{run_id}.json"}"]]
           end
         end
 
@@ -168,7 +168,7 @@ module Specwrk
         def response
           interupt! if ENV["SPECWRK_SRV_SINGLE_RUN"]
 
-          [200, {"Content-Type" => "text/plain"}, ["✌️"]]
+          [200, {"content-type" => "text/plain"}, ["✌️"]]
         end
 
         def interupt!
