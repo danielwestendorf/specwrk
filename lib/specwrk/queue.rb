@@ -6,7 +6,11 @@ require "json"
 module Specwrk
   # Thread-safe Hash access
   class Queue
+    attr_reader :created_at
+
     def initialize(hash = {})
+      @created_at = Time.now
+
       if block_given?
         @mutex = Monitor.new # Reentrant locking is required here
         # It's possible to enter the proc from two threads, so we need to ||= in case
@@ -93,7 +97,7 @@ module Specwrk
     def previous_run_times_file_path
       return unless ENV["SPECWRK_OUT"]
 
-      @previous_run_times_file_path ||= Dir.glob(File.join(ENV["SPECWRK_OUT"], "report-*.json")).first
+      @previous_run_times_file_path ||= Dir.glob(File.join(ENV["SPECWRK_OUT"], "*-report-*.json")).first
     end
 
     # Take elements from the hash where the file_path is the same
@@ -175,7 +179,7 @@ module Specwrk
         @hash.values.each { |example| calculate(example) }
 
         @output[:meta][:total_run_time] = @run_times.sum
-        @output[:meta][:average_run_time] = @output[:meta][:total_run_time] / @run_times.length.to_f
+        @output[:meta][:average_run_time] = @output[:meta][:total_run_time] / [@run_times.length, 1].max.to_f
         @output[:meta][:first_started_at] = @first_started_at.iso8601(6)
         @output[:meta][:last_finished_at] = @last_finished_at.iso8601(6)
 

@@ -326,6 +326,8 @@ RSpec.describe Specwrk::CompletedQueue do
       instance.dump_and_write(path)
     end
 
+    after { FileUtils.rm_f(path) }
+
     it "dumps the data to a JSON file" do
       expect(subject).to eq({
         examples: {
