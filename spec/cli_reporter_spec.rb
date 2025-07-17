@@ -1,0 +1,102 @@
+# frozen_string_literal: true
+
+require "specwrk/cli_reporter"
+
+RSpec.describe Specwrk::CLIReporter do
+  describe "#report" do
+    describe "#report" do
+      subject { instance.report }
+
+      let(:instance) { described_class.new }
+
+      context "client cannot connect" do
+        before do
+          allow(Specwrk::Client).to receive(:connect?).and_return(false)
+        end
+
+        it "prints failure message and returns 1" do
+          expect(instance).to receive(:puts)
+            .with("\e[31mCannot connect to server to generate report. Assuming failure.\e[0m")
+          expect(subject).to eq(1)
+        end
+      end
+
+      context "client responds with error" do
+        before do
+          allow(Specwrk::Client).to receive(:connect?)
+            .and_return(true)
+
+          allow(instance).to receive(:client)
+            .and_return(double(shutdown: nil))
+
+          allow(instance).to receive(:report_data)
+            .and_raise(Specwrk::UnhandledResponseError.new("fff"))
+        end
+
+        it "prints no examples run message and returns 1" do
+          expect(instance).to receive(:puts).with("\e[31mCannot report, fff.\e[0m")
+          expect(subject).to eq(1)
+        end
+      end
+
+      context "client responds" do
+        let(:total_duration) { 2.5 }
+        let(:total_run_time) { 5.0 }
+        let(:failure_count) { 0 }
+        let(:pending_count) { 0 }
+        let(:example_count) { 100 }
+
+        before do
+          allow(Specwrk::Client).to receive(:connect?)
+            .and_return(true)
+
+          allow(instance).to receive(:total_duration)
+            .and_return(total_duration)
+          allow(instance).to receive(:total_run_time)
+            .and_return(total_run_time)
+          allow(instance).to receive(:failure_count)
+            .and_return(failure_count)
+          allow(instance).to receive(:pending_count)
+            .and_return(pending_count)
+          allow(instance).to receive(:example_count)
+            .and_return(example_count)
+
+          allow(instance).to receive(:client)
+            .and_return(double(shutdown: nil))
+        end
+
+        context "client returns report data with positive failure count" do
+          let(:failure_count) { 1 }
+
+          it "prints finish summary and totals line then returns 1" do
+            expect(instance).to receive(:puts)
+              .with("\nFinished in 2.5 (total execution time of 5.0)\n")
+            expect(instance).to receive(:puts).with("\e[31m100 examples, 1 failure\e[0m")
+            expect(subject).to eq(1)
+          end
+        end
+
+        context "client returns report data with positive pending count" do
+          let(:pending_count) { 2 }
+
+          it "prints finish summary and totals line then returns 0" do
+            expect(instance).to receive(:puts)
+              .with("\nFinished in 2.5 (total execution time of 5.0)\n")
+            expect(instance).to receive(:puts)
+              .with("\e[33m100 examples, 0 failures, 2 pending\e[0m")
+            expect(subject).to eq(0)
+          end
+        end
+
+        context "client returns report data with all passed" do
+          it "prints finish summary and totals line then returns 0" do
+            expect(instance).to receive(:puts)
+              .with("\nFinished in 2.5 (total execution time of 5.0)\n")
+            expect(instance).to receive(:puts).with("\e[32m100 examples, 0 failures\e[0m")
+            expect(subject).to eq(0)
+          end
+        end
+      end
+    end
+  end
+end

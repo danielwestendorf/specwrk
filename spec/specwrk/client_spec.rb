@@ -270,4 +270,34 @@ RSpec.describe Specwrk::Client do
       end
     end
   end
+
+  describe "#report" do
+    subject { client.report }
+
+    let(:client) { described_class.new }
+
+    context "when response is 200" do
+      let(:data) { {foo: "bar"} }
+
+      before do
+        stub_request(:get, "#{base_uri}/report")
+          .with(headers: headers)
+          .to_return(status: 200, body: data.to_json)
+      end
+
+      it { is_expected.to eq(data) }
+    end
+
+    context "when response is error" do
+      before do
+        stub_request(:get, "#{base_uri}/report")
+          .with(headers: headers)
+          .to_return(status: 500, body: "boom")
+      end
+
+      it "raises an UnhandledResponseError" do
+        expect { subject }.to raise_error(Specwrk::UnhandledResponseError, /500: boom/)
+      end
+    end
+  end
 end

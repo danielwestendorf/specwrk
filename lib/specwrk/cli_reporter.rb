@@ -11,7 +11,10 @@ require "rspec/core/formatters/console_codes"
 module Specwrk
   class CLIReporter
     def report
-      return 1 unless Client.connect?
+      unless Client.connect?
+        puts colorizer.wrap("Cannot connect to server to generate report. Assuming failure.", :red)
+        return 1
+      end
 
       puts "\nFinished in #{total_duration} " \
                           "(total execution time of #{total_run_time})\n"
@@ -28,8 +31,11 @@ module Specwrk
         puts colorizer.wrap(totals_line, :green)
         0
       end
-    rescue Specwrk::UnhandledResponseError
-      puts colorizer.wrap("No examples run.", :red)
+    rescue Specwrk::UnhandledResponseError => e
+      puts colorizer.wrap("Cannot report, #{e.message}.", :red)
+
+      client.shutdown
+
       1
     end
 
@@ -43,28 +49,28 @@ module Specwrk
       summary
     end
 
-    def stats
-      @stats ||= client.stats
+    def report_data
+      @report_data ||= client.report
     end
 
     def total_duration
-      Time.parse(stats.dig(:completed, :meta, :last_finished_at)) - Time.parse(stats.dig(:completed, :meta, :first_started_at))
+      Time.parse(report_data.dig(:meta, :last_finished_at)) - Time.parse(report_data.dig(:meta, :first_started_at))
     end
 
     def total_run_time
-      stats.dig(:completed, :meta, :total_run_time)
+      report_data.dig(:meta, :total_run_time)
     end
 
     def failure_count
-      stats.dig(:completed, :meta, :failures)
+      report_data.dig(:meta, :failures)
     end
 
     def pending_count
-      stats.dig(:completed, :meta, :pending)
+      report_data.dig(:meta, :pending)
     end
 
     def example_count
-      stats.dig(:completed, :examples).length
+      report_data.dig(:examples).length
     end
 
     def client

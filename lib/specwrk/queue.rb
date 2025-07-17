@@ -97,7 +97,7 @@ module Specwrk
     def previous_run_times_file_path
       return unless ENV["SPECWRK_OUT"]
 
-      @previous_run_times_file_path ||= Dir.glob(File.join(ENV["SPECWRK_OUT"], "*-report-*.json")).first
+      @previous_run_times_file_path ||= Dir.glob(File.join(ENV["SPECWRK_OUT"], "*-report-*.json")).last
     end
 
     # Take elements from the hash where the file_path is the same

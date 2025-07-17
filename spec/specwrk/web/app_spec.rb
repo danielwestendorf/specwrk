@@ -141,6 +141,24 @@ RSpec.describe Specwrk::Web::App do
       it { is_expected.to eq 103 }
     end
 
+    context "GET /report" do
+      let(:http_method) { "GET" }
+      let(:path) { "/report" }
+
+      before { stub_endpoint(Specwrk::Web::Endpoints::Report, 104) }
+
+      it { is_expected.to eq 104 }
+    end
+
+    context "DELETE /shutdown" do
+      let(:http_method) { "DELETE" }
+      let(:path) { "/shutdown" }
+
+      before { stub_endpoint(Specwrk::Web::Endpoints::Shutdown, 105) }
+
+      it { is_expected.to eq 105 }
+    end
+
     context "unmatched route" do
       let(:http_method) { "GET" }
       let(:path) { "/bogus" }

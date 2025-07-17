@@ -62,8 +62,8 @@ module Specwrk
       response.code == "200"
     end
 
-    def stats
-      response = get "/stats"
+    def report
+      response = get "/report"
 
       if response.code == "200"
         JSON.parse(response.body, symbolize_names: true)

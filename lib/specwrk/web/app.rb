@@ -98,8 +98,8 @@ module Specwrk
           Endpoints::Complete
         when ["POST", "/seed"]
           Endpoints::Seed
-        when ["GET", "/stats"]
-          Endpoints::Stats
+        when ["GET", "/report"]
+          Endpoints::Report
         when ["DELETE", "/shutdown"]
           Endpoints::Shutdown
         else
