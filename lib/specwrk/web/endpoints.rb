@@ -51,11 +51,11 @@ module Specwrk
         end
 
         def not_found
-          [404, {"Content-Type" => "text/plain"}, ["This is not the path you're looking for, 'ol chap..."]]
+          [404, {"content-type" => "text/plain"}, ["This is not the path you're looking for, 'ol chap..."]]
         end
 
         def ok
-          [200, {"Content-Type" => "text/plain"}, ["OK, 'ol chap"]]
+          [200, {"content-type" => "text/plain"}, ["OK, 'ol chap"]]
         end
 
         def payload
@@ -230,11 +230,11 @@ module Specwrk
           processing.merge!(processing_data)
 
           if @examples.any?
-            [200, {"Content-Type" => "application/json"}, [JSON.generate(@examples)]]
+            [200, {"content-type" => "application/json"}, [JSON.generate(@examples)]]
           elsif pending.empty? && processing.empty? && completed.empty?
-            [204, {"Content-Type" => "text/plain"}, ["Waiting for sample to be seeded."]]
+            [204, {"content-type" => "text/plain"}, ["Waiting for sample to be seeded."]]
           elsif completed.any? && processing.empty?
-            [410, {"Content-Type" => "text/plain"}, ["That's a good lad. Run along now and go home."]]
+            [410, {"content-type" => "text/plain"}, ["That's a good lad. Run along now and go home."]]
           else
             not_found
           end
@@ -253,11 +253,11 @@ module Specwrk
           processing.merge!(processing_data)
 
           if @examples.any?
-            [200, {"Content-Type" => "application/json"}, [JSON.generate(@examples)]]
+            [200, {"content-type" => "application/json"}, [JSON.generate(@examples)]]
           elsif pending.empty? && processing.empty? && completed.empty?
-            [204, {"Content-Type" => "text/plain"}, ["Waiting for sample to be seeded."]]
+            [204, {"content-type" => "text/plain"}, ["Waiting for sample to be seeded."]]
           elsif completed.any? && processing.empty?
-            [410, {"Content-Type" => "text/plain"}, ["That's a good lad. Run along now and go home."]]
+            [410, {"content-type" => "text/plain"}, ["That's a good lad. Run along now and go home."]]
           else
             not_found
           end
@@ -288,7 +288,7 @@ module Specwrk
 
       class Report < Base
         def with_response
-          [200, {"Content-Type" => "application/json"}, [JSON.generate(completed.dump)]]
+          [200, {"content-type" => "application/json"}, [JSON.generate(completed.dump)]]
         end
       end
 
@@ -299,7 +299,7 @@ module Specwrk
 
           interupt! if ENV["SPECWRK_SRV_SINGLE_RUN"]
 
-          [200, {"Content-Type" => "text/plain"}, ["✌️"]]
+          [200, {"content-type" => "text/plain"}, ["✌️"]]
         end
 
         def interupt!

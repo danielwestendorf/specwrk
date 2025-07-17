@@ -28,7 +28,7 @@ module Specwrk
       private
 
       def unauthorized
-        [401, {"Content-Type" => "application/json"}, ["Unauthorized"]]
+        [401, {"content-type" => "application/json"}, ["Unauthorized"]]
       end
     end
   end
