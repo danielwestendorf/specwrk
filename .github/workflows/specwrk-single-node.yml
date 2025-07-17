@@ -7,6 +7,9 @@ on:
 
   pull_request:
 
+env:
+  FORCE_COLOR: "1"
+
 jobs:
   specwrk-single-node:
     runs-on: ubuntu-latest

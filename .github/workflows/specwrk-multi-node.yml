@@ -7,6 +7,14 @@ on:
 
   pull_request:
 
+env:
+  FORCE_COLOR: "1"
+  ## SPECWRK STEP ##
+  SPECWRK_RUN: ${ github.run_id }}-${{ github.run_attempt }}
+  SPECWRK_SRV_KEY: ${{ secrets.SPECWRK_SRV_KEY }}
+  SPECWRK_SRV_URI: ${{ secrets.SPECWRK_SRV_URI }}
+  ## /SPECWRK STEP ##
+
 jobs:
   prepare:
     runs-on: ubuntu-latest
@@ -23,10 +31,6 @@ jobs:
 
       ## SPECWRK STEP ##
       - name: Seed examples to specwrk server
-        env:
-          SPECWRK_RUN: ${{ github.run_id }}-${{ github.run_attempt }}
-          SPECWRK_SRV_KEY: ${{ secrets.SPECWRK_SRV_KEY }}
-          SPECWRK_SRV_URI: ${{ secrets.SPECWRK_SRV_URI }}
         run: bundle exec specwrk seed spec/
       ## /SPECWRK STEP ##
     
@@ -57,9 +61,5 @@ jobs:
 
       ## SPECWRK STEP ##
       - name: Run tests via specwrk work
-        env:
-          SPECWRK_RUN: ${{ github.run_id }}-${{ github.run_attempt }}
-          SPECWRK_SRV_KEY: ${{ secrets.SPECWRK_SRV_KEY }}
-          SPECWRK_SRV_URI: ${{ secrets.SPECWRK_SRV_URI }}
         run: bundle exec specwrk work --count 2
       ## /SPECWRK STEP ##
