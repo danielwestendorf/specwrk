@@ -3,6 +3,8 @@
 require "specwrk/cli_reporter"
 
 RSpec.describe Specwrk::CLIReporter do
+  before { allow($stdout).to receive(:tty?).and_return(true) }
+
   describe "#report" do
     describe "#report" do
       subject { instance.report }
