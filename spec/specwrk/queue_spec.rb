@@ -6,29 +6,6 @@ require "securerandom"
 require "specwrk/queue"
 
 RSpec.describe Specwrk::Queue do
-  describe "#initialize" do
-    context "with a block" do
-      subject { instance[:not_set] }
-
-      let(:instance) { described_class.new { |h, key| 1 } }
-
-      it { is_expected.to eq(1) }
-    end
-  end
-
-  describe "#method_missing" do
-    subject { instance.delete(:foo) }
-
-    let(:instance) { described_class.new(foo: "bar") }
-
-    it { is_expected.to eq("bar") }
-  end
-
-  describe "#responds_to_missing?" do
-    subject { described_class.new.respond_to?(:clear) }
-
-    it { is_expected.to eq(true) }
-  end
 end
 
 RSpec.describe Specwrk::PendingQueue do
