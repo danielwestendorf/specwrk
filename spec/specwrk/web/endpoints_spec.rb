@@ -39,7 +39,7 @@ RSpec.describe Specwrk::Web::Endpoints do
   let(:worker_id) { :"foobar-0" }
   let(:response) { instance.response }
   let(:instance) { described_class.new(request) }
-  let(:ok) { [200, {"content-type" => "text/plain"}, ["OK, 'ol chap"]] }
+  let(:ok) { [200, {"Content-Type" => "text/plain"}, ["OK, 'ol chap"]] }
 
   let(:datastore_path) { File.join(base_path, run_id, "queues.json").to_s.tap { |path| FileUtils.mkdir_p(Pathname.new(path).dirname) } }
   let(:env_vars) { {"SPECWRK_OUT" => base_path} }
@@ -182,13 +182,13 @@ RSpec.describe Specwrk::Web::Endpoints do
         }
       end
 
-      it { is_expected.to eq([200, {"content-type" => "application/json"}, [JSON.generate([{id: "a.rb:2", file_path: "a.rb", expected_run_time: 0.1}])]]) }
+      it { is_expected.to eq([200, {"Content-Type" => "application/json"}, [JSON.generate([{id: "a.rb:2", file_path: "a.rb", expected_run_time: 0.1}])]]) }
       it { expect { subject }.to change { pending_queue.length }.from(1).to(0) }
       it { expect { subject }.to change { processing_queue.length }.from(0).to(1) }
     end
 
     context "no items in any queue" do
-      it { is_expected.to eq([204, {"content-type" => "text/plain"}, ["Waiting for sample to be seeded."]]) }
+      it { is_expected.to eq([204, {"Content-Type" => "text/plain"}, ["Waiting for sample to be seeded."]]) }
     end
 
     context "no items in the processing queue, but completed queue has items" do
@@ -202,7 +202,7 @@ RSpec.describe Specwrk::Web::Endpoints do
         }
       end
 
-      it { is_expected.to eq([410, {"content-type" => "text/plain"}, ["That's a good lad. Run along now and go home."]]) }
+      it { is_expected.to eq([410, {"Content-Type" => "text/plain"}, ["That's a good lad. Run along now and go home."]]) }
     end
 
     context "no items in the pending queue, but something in the processing queue" do
@@ -214,7 +214,7 @@ RSpec.describe Specwrk::Web::Endpoints do
         }
       end
 
-      it { is_expected.to eq([404, {"content-type" => "text/plain"}, ["This is not the path you're looking for, 'ol chap..."]]) }
+      it { is_expected.to eq([404, {"Content-Type" => "text/plain"}, ["This is not the path you're looking for, 'ol chap..."]]) }
     end
   end
 
@@ -227,7 +227,7 @@ RSpec.describe Specwrk::Web::Endpoints do
     end
 
     context "run report file does not exist" do
-      it { is_expected.to eq([404, {"content-type" => "text/plain"}, ["Unable to report on run #{run_id}; no file matching *-report-main.json"]]) }
+      it { is_expected.to eq([404, {"Content-Type" => "text/plain"}, ["Unable to report on run #{run_id}; no file matching *-report-main.json"]]) }
     end
 
     context "run report file does exist" do
@@ -241,7 +241,7 @@ RSpec.describe Specwrk::Web::Endpoints do
         FileUtils.rm(most_recent_run_report_file)
       end
 
-      it { is_expected.to eq([200, {"content-type" => "application/json"}, [file_content]]) }
+      it { is_expected.to eq([200, {"Content-Type" => "application/json"}, [file_content]]) }
     end
   end
 end

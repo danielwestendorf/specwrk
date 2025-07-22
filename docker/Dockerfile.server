@@ -1,6 +1,11 @@
 FROM ruby:3.4-alpine
 
-RUN apk add --no-cache build-base 
+RUN apk add --no-cache \
+      build-base \
+      ruby-dev \
+      linux-headers \
+      zlib-dev \
+      libffi-dev
 
 WORKDIR /app
 
@@ -8,15 +13,14 @@ RUN mkdir .specwrk/
 
 ARG SPECWRK_SRV_PORT=5138
 ARG SPECWRK_VERSION=latest
-ARG GEM_FILE=specwrk-$SPECWRK_VERSION.gem
+ARG GEMFILE=specwrk-$SPECWRK_VERSION.gem
 
-COPY $GEM_FILE ./
-RUN gem install ./$GEM_FILE --no-document
-RUN rm ./$GEM_FILE
+COPY $GEMFILE ./
+RUN gem install ./$GEMFILE --no-document
+RUN rm ./$GEMFILE
 
-RUN gem install pitchfork thruster
+RUN gem install puma thruster
 COPY config.ru ./
-COPY docker/pitchfork.conf ./
 
 COPY docker/entrypoint.server.sh /usr/local/bin/entrypoint
 RUN chmod +x /usr/local/bin/entrypoint
