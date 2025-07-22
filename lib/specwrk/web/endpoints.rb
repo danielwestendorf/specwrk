@@ -13,6 +13,8 @@ module Specwrk
         end
 
         def response
+          return with_response unless run_id # No run_id, no datastore usage in the endpoint
+
           datastore.with_lock do |db|
             @started_at = if db[:started_at]
               Time.parse(db[:started_at])

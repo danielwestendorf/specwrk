@@ -21,8 +21,6 @@ require "specwrk/web/endpoints"
 module Specwrk
   class Web
     class App
-      REAP_INTERVAL = 330 # HTTP connection timeout + some buffer
-
       class << self
         def run!
           Process.setproctitle "specwrk-server"
