@@ -9,6 +9,7 @@ trap("INT") do
 
     Specwrk.force_quit = true
   elsif Specwrk.starting_pid != Process.pid
+    RSpec.world.wants_to_quit = true if defined?(RSpec)
     exit(1) if Specwrk.force_quit
     Specwrk.force_quit = true
   end
