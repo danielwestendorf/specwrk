@@ -31,6 +31,11 @@ RSpec.describe Specwrk::Worker do
     allow(tempfile).to receive(:each_line)
       .and_yield("foo")
       .and_yield("bar")
+
+    allow($stdout).to receive(:write)
+      .with("foo")
+    allow($stdout).to receive(:write)
+      .with("bar")
   end
 
   describe ".run!" do

@@ -1,0 +1,10 @@
+#!/usr/bin/env ruby
+# bin/console
+
+# 1. Bootstrap the gem’s development environment
+require "bundler/setup"
+require "specwrk"
+
+# 2a. Start a plain IRB session
+require "irb"
+IRB.start

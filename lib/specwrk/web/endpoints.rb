@@ -2,18 +2,41 @@
 
 require "json"
 
+require "specwrk/store"
+
 module Specwrk
   class Web
     module Endpoints
       class Base
+        attr_reader :started_at
+
         def initialize(request)
           @request = request
-
-          worker[:first_seen_at] ||= Time.now
-          worker[:last_seen_at] = Time.now
         end
 
         def response
+          before_lock
+
+          return with_response unless run_id # No run_id, no datastore usage in the endpoint
+
+          payload # parse the payload before any locking
+
+          worker[:first_seen_at] ||= Time.now.iso8601
+          worker[:last_seen_at] = Time.now.iso8601
+
+          final_response = with_lock do
+            started_at = metadata[:started_at] ||= Time.now.iso8601
+            @started_at = Time.parse(started_at)
+
+            with_response
+          end
+
+          after_lock
+
+          final_response
+        end
+
+        def with_response
           not_found
         end
 
@@ -21,15 +44,25 @@ module Specwrk
 
         attr_reader :request
 
+        def before_lock
+        end
+
+        def after_lock
+        end
+
         def not_found
-          [404, {"content-type" => "text/plain"}, ["This is not the path you're looking for, 'ol chap..."]]
+          [404, {"Content-Type" => "text/plain"}, ["This is not the path you're looking for, 'ol chap..."]]
         end
 
         def ok
-          [200, {"content-type" => "text/plain"}, ["OK, 'ol chap"]]
+          [200, {"Content-Type" => "text/plain"}, ["OK, 'ol chap"]]
         end
 
         def payload
+          return unless request.content_type&.start_with?("application/json")
+          return unless request.post? || request.put? || request.delete?
+          return if body.empty?
+
           @payload ||= JSON.parse(body, symbolize_names: true)
         end
 
@@ -37,24 +70,28 @@ module Specwrk
           @body ||= request.body.read
         end
 
-        def pending_queue
-          Web::PENDING_QUEUES[run_id]
+        def pending
+          @pending ||= PendingStore.new(File.join(datastore_path, "pending"))
         end
 
-        def processing_queue
-          Web::PROCESSING_QUEUES[request.get_header("HTTP_X_SPECWRK_RUN")]
+        def processing
+          @processing ||= Store.new(File.join(datastore_path, "processing"))
         end
 
-        def completed_queue
-          Web::COMPLETED_QUEUES[request.get_header("HTTP_X_SPECWRK_RUN")]
+        def completed
+          @completed ||= CompletedStore.new(File.join(datastore_path, "completed"))
         end
 
-        def workers
-          Web::WORKERS[request.get_header("HTTP_X_SPECWRK_RUN")]
+        def metadata
+          @metadata ||= Store.new(File.join(datastore_path, "metadata"), thread_safe_reads: false)
+        end
+
+        def run_times
+          @run_times ||= Store.new(File.join(ENV["SPECWRK_OUT"], "run_times"), thread_safe_reads: false)
         end
 
         def worker
-          workers[request.get_header("HTTP_X_SPECWRK_ID")]
+          @worker ||= Store.new(File.join(datastore_path, "workers", request.get_header("HTTP_X_SPECWRK_ID").to_s))
         end
 
         def run_id
@@ -62,7 +99,24 @@ module Specwrk
         end
 
         def run_report_file_path
-          @run_report_file_path ||= File.join(ENV["SPECWRK_OUT"], "#{completed_queue.created_at.strftime("%Y%m%dT%H%M%S")}-report-#{run_id}.json").to_s
+          @run_report_file_path ||= File.join(datastore_path, "#{started_at.strftime("%Y%m%dT%H%M%S")}-report.json").to_s
+        end
+
+        def datastore_path
+          @datastore_path ||= File.join(ENV["SPECWRK_OUT"], run_id).to_s.tap do |path|
+            FileUtils.mkdir_p(path) unless File.directory?(path)
+          end
+        end
+
+        def with_lock
+          Thread.pass until lock_file.flock(File::LOCK_EX)
+          yield
+        ensure
+          lock_file.flock(File::LOCK_UN)
+        end
+
+        def lock_file
+          @lock_file ||= File.open(File.join(datastore_path, "lock"), "a")
         end
       end
 
@@ -70,66 +124,122 @@ module Specwrk
       NotFound = Class.new(Base)
 
       class Health < Base
-        def response
+        def with_response
           [200, {}, []]
         end
       end
 
       class Heartbeat < Base
-        def response
+        def with_response
           ok
         end
       end
 
       class Seed < Base
-        def response
-          pending_queue.synchronize do |pending_queue_hash|
-            unless ENV["SPECWRK_SRV_SINGLE_SEED_PER_RUN"] && pending_queue_hash.length.positive?
-              examples = payload.map { |hash| [hash[:id], hash] }.to_h
+        def before_lock
+          examples_with_run_times if persist_seeds?
+        end
 
-              pending_queue.merge_with_previous_run_times!(examples)
+        def with_response
+          if persist_seeds?
+            new_run_time_bucket_maximums = [pending.run_time_bucket_maximum, @seeds_run_time_bucket_maximum.to_f].compact
+            pending.run_time_bucket_maximum = new_run_time_bucket_maximums.sum.to_f / new_run_time_bucket_maximums.length.to_f
 
-              ok
-            end
+            pending.merge!(examples_with_run_times)
           end
 
+          processing.clear
+          completed.clear
+
           ok
+        end
+
+        def examples_with_run_times
+          @examples_with_run_times ||= begin
+            unsorted_examples_with_run_times = []
+            all_ids = payload.map { |example| example[:id] }
+            all_run_times = run_times.multi_read(*all_ids)
+
+            payload.each do |example|
+              run_time = all_run_times[example[:id]]
+
+              unsorted_examples_with_run_times << [example[:id], example.merge(expected_run_time: run_time)]
+            end
+
+            sorted_examples_with_run_times = if sort_by == :timings
+              unsorted_examples_with_run_times.sort_by do |entry|
+                -(entry.last[:expected_run_time] || Float::INFINITY)
+              end
+            else
+              unsorted_examples_with_run_times.sort_by do |entry|
+                entry.last[:file_path]
+              end
+            end
+
+            @seeds_run_time_bucket_maximum = run_time_bucket_maximum(all_run_times.values.compact)
+            @examples_with_run_times = sorted_examples_with_run_times.to_h
+          end
+        end
+
+        private
+
+        # Average + standard deviation
+        def run_time_bucket_maximum(values)
+          return 0 if values.length.zero?
+
+          mean = values.sum.to_f / values.size
+          variance = values.map { |v| (v - mean)**2 }.sum / values.size
+          (mean + Math.sqrt(variance)).round(2)
+        end
+
+        def persist_seeds?
+          ENV["SPECWRK_SRV_SINGLE_SEED_PER_RUN"].nil? || pending.empty?
+        end
+
+        def sort_by
+          if ENV["SPECWRK_SRV_GROUP_BY"] == "file" || run_times.empty?
+            :file
+          else
+            :timings
+          end
         end
       end
 
       class Complete < Base
-        def response
-          processing_queue.synchronize do |processing_queue_hash|
-            payload.each do |example|
-              next unless processing_queue_hash.delete(example[:id])
-              completed_queue[example[:id]] = example
-            end
-          end
-
-          if pending_queue.length.zero? && processing_queue.length.zero? && completed_queue.length.positive? && ENV["SPECWRK_OUT"]
-            completed_queue.dump_and_write(run_report_file_path)
-          end
+        def with_response
+          completed.merge!(completed_examples)
+          processing.delete(*completed_examples.keys)
 
           ok
+        end
+
+        private
+
+        def completed_examples
+          @completed_data ||= payload.map { |example| [example[:id], example] if processing[example[:id]] }.compact.to_h
+        end
+
+        # We don't care about exact values here, just approximate run times are fine
+        # So if we overwrite run times from another process it is nbd
+        def after_lock
+          run_time_data = payload.map { |example| [example[:id], example[:run_time]] }.to_h
+          run_times.merge! run_time_data
         end
       end
 
       class Pop < Base
-        def response
-          processing_queue.synchronize do |processing_queue_hash|
-            @examples = pending_queue.shift_bucket
+        def with_response
+          @examples = pending.shift_bucket
 
-            @examples.each do |example|
-              processing_queue_hash[example[:id]] = example
-            end
-          end
+          processing_data = @examples.map { |example| [example[:id], example] }.to_h
+          processing.merge!(processing_data)
 
-          if @examples.length.positive?
-            [200, {"content-type" => "application/json"}, [JSON.generate(@examples)]]
-          elsif pending_queue.length.zero? && processing_queue.length.zero? && completed_queue.length.zero?
-            [204, {"content-type" => "text/plain"}, ["Waiting for sample to be seeded."]]
-          elsif completed_queue.length.positive? && processing_queue.length.zero?
-            [410, {"content-type" => "text/plain"}, ["That's a good lad. Run along now and go home."]]
+          if @examples.any?
+            [200, {"Content-Type" => "application/json"}, [JSON.generate(@examples)]]
+          elsif pending.empty? && processing.empty? && completed.empty?
+            [204, {"Content-Type" => "text/plain"}, ["Waiting for sample to be seeded."]]
+          elsif completed.any? && processing.empty?
+            [410, {"Content-Type" => "text/plain"}, ["That's a good lad. Run along now and go home."]]
           else
             not_found
           end
@@ -137,38 +247,19 @@ module Specwrk
       end
 
       class Report < Base
-        def response
-          if data
-            [200, {"content-type" => "application/json"}, [data]]
-          else
-            [404, {"content-type" => "text/plain"}, ["Unable to report on run #{run_id}; no file matching #{"*-report-#{run_id}.json"}"]]
-          end
-        end
-
-        private
-
-        def data
-          return @data if defined? @data
-
-          return unless most_recent_run_report_file
-          return unless File.exist?(most_recent_run_report_file)
-
-          @data = File.open(most_recent_run_report_file, "r") do |file|
-            file.flock(File::LOCK_SH)
-            file.read
-          end
-        end
-
-        def most_recent_run_report_file
-          @most_recent_run_report_file ||= Dir.glob(File.join(ENV["SPECWRK_OUT"], "*-report-#{run_id}.json")).last
+        def with_response
+          [200, {"Content-Type" => "application/json"}, [JSON.generate(completed.dump)]]
         end
       end
 
       class Shutdown < Base
-        def response
+        def with_response
+          pending.clear
+          processing.clear
+
           interupt! if ENV["SPECWRK_SRV_SINGLE_RUN"]
 
-          [200, {"content-type" => "text/plain"}, ["✌️"]]
+          [200, {"Content-Type" => "text/plain"}, ["✌️"]]
         end
 
         def interupt!
