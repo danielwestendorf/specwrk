@@ -6,38 +6,14 @@ module Specwrk
   class Web
     module Endpoints
       class Base
-        attr_reader :pending_queue, :processing_queue, :completed_queue, :workers, :started_at
-
         def initialize(request)
           @request = request
+
+          worker[:first_seen_at] ||= Time.now
+          worker[:last_seen_at] = Time.now
         end
 
         def response
-          datastore.with_lock do |db|
-            @started_at = if db[:started_at]
-              Time.parse(db[:started_at])
-            else
-              db[:started_at] = Time.now
-            end
-
-            @pending_queue = PendingQueue.new.merge!(db[:pending] || {})
-            @processing_queue = Queue.new.merge!(db[:processing] || {})
-            @completed_queue = CompletedQueue.new.merge!(db[:completed] || {})
-            @workers = db[:workers] ||= {}
-
-            worker[:first_seen_at] ||= Time.now
-            worker[:last_seen_at] = Time.now
-
-            with_response.tap do
-              db[:pending] = pending_queue.to_h
-              db[:processing] = processing_queue.to_h
-              db[:completed] = completed_queue.to_h
-              db[:workers] = workers.to_h
-            end
-          end
-        end
-
-        def with_response
           not_found
         end
 
@@ -46,11 +22,11 @@ module Specwrk
         attr_reader :request
 
         def not_found
-          [404, {"Content-Type" => "text/plain"}, ["This is not the path you're looking for, 'ol chap..."]]
+          [404, {"content-type" => "text/plain"}, ["This is not the path you're looking for, 'ol chap..."]]
         end
 
         def ok
-          [200, {"Content-Type" => "text/plain"}, ["OK, 'ol chap"]]
+          [200, {"content-type" => "text/plain"}, ["OK, 'ol chap"]]
         end
 
         def payload
@@ -61,8 +37,24 @@ module Specwrk
           @body ||= request.body.read
         end
 
+        def pending_queue
+          Web::PENDING_QUEUES[run_id]
+        end
+
+        def processing_queue
+          Web::PROCESSING_QUEUES[request.get_header("HTTP_X_SPECWRK_RUN")]
+        end
+
+        def completed_queue
+          Web::COMPLETED_QUEUES[request.get_header("HTTP_X_SPECWRK_RUN")]
+        end
+
+        def workers
+          Web::WORKERS[request.get_header("HTTP_X_SPECWRK_RUN")]
+        end
+
         def worker
-          workers[request.get_header("HTTP_X_SPECWRK_ID")] ||= {}
+          workers[request.get_header("HTTP_X_SPECWRK_ID")]
         end
 
         def run_id
@@ -70,11 +62,7 @@ module Specwrk
         end
 
         def run_report_file_path
-          @run_report_file_path ||= File.join(ENV["SPECWRK_OUT"], run_id, "#{started_at.strftime("%Y%m%dT%H%M%S")}-report.json").to_s
-        end
-
-        def datastore
-          Web.datastore[File.join(ENV["SPECWRK_OUT"], run_id, "queues.json").to_s]
+          @run_report_file_path ||= File.join(ENV["SPECWRK_OUT"], "#{completed_queue.created_at.strftime("%Y%m%dT%H%M%S")}-report-#{run_id}.json").to_s
         end
       end
 
@@ -82,22 +70,27 @@ module Specwrk
       NotFound = Class.new(Base)
 
       class Health < Base
-        def with_response
+        def response
           [200, {}, []]
         end
       end
 
       class Heartbeat < Base
-        def with_response
+        def response
           ok
         end
       end
 
       class Seed < Base
-        def with_response
-          if ENV["SPECWRK_SRV_SINGLE_SEED_PER_RUN"].nil? || pending_queue.length.zero?
-            examples = payload.map { |hash| [hash[:id], hash] }.to_h
-            pending_queue.merge_with_previous_run_times!(examples)
+        def response
+          pending_queue.synchronize do |pending_queue_hash|
+            unless ENV["SPECWRK_SRV_SINGLE_SEED_PER_RUN"] && pending_queue_hash.length.positive?
+              examples = payload.map { |hash| [hash[:id], hash] }.to_h
+
+              pending_queue.merge_with_previous_run_times!(examples)
+
+              ok
+            end
           end
 
           ok
@@ -105,15 +98,16 @@ module Specwrk
       end
 
       class Complete < Base
-        def with_response
-          payload.each do |example|
-            next unless processing_queue.delete(example[:id].to_sym)
-            completed_queue[example[:id].to_sym] = example
+        def response
+          processing_queue.synchronize do |processing_queue_hash|
+            payload.each do |example|
+              next unless processing_queue_hash.delete(example[:id])
+              completed_queue[example[:id]] = example
+            end
           end
 
           if pending_queue.length.zero? && processing_queue.length.zero? && completed_queue.length.positive? && ENV["SPECWRK_OUT"]
             completed_queue.dump_and_write(run_report_file_path)
-            FileUtils.ln_sf(run_report_file_path, File.join(ENV["SPECWRK_OUT"], "report.json"))
           end
 
           ok
@@ -121,19 +115,21 @@ module Specwrk
       end
 
       class Pop < Base
-        def with_response
-          @examples = pending_queue.shift_bucket
+        def response
+          processing_queue.synchronize do |processing_queue_hash|
+            @examples = pending_queue.shift_bucket
 
-          @examples.each do |example|
-            processing_queue[example[:id]] = example
+            @examples.each do |example|
+              processing_queue_hash[example[:id]] = example
+            end
           end
 
           if @examples.length.positive?
-            [200, {"Content-Type" => "application/json"}, [JSON.generate(@examples)]]
+            [200, {"content-type" => "application/json"}, [JSON.generate(@examples)]]
           elsif pending_queue.length.zero? && processing_queue.length.zero? && completed_queue.length.zero?
-            [204, {"Content-Type" => "text/plain"}, ["Waiting for sample to be seeded."]]
+            [204, {"content-type" => "text/plain"}, ["Waiting for sample to be seeded."]]
           elsif completed_queue.length.positive? && processing_queue.length.zero?
-            [410, {"Content-Type" => "text/plain"}, ["That's a good lad. Run along now and go home."]]
+            [410, {"content-type" => "text/plain"}, ["That's a good lad. Run along now and go home."]]
           else
             not_found
           end
@@ -141,11 +137,11 @@ module Specwrk
       end
 
       class Report < Base
-        def with_response
+        def response
           if data
-            [200, {"Content-Type" => "application/json"}, [data]]
+            [200, {"content-type" => "application/json"}, [data]]
           else
-            [404, {"Content-Type" => "text/plain"}, ["Unable to report on run #{run_id}; no file matching #{"*-report-#{run_id}.json"}"]]
+            [404, {"content-type" => "text/plain"}, ["Unable to report on run #{run_id}; no file matching #{"*-report-#{run_id}.json"}"]]
           end
         end
 
@@ -164,15 +160,15 @@ module Specwrk
         end
 
         def most_recent_run_report_file
-          @most_recent_run_report_file ||= Dir.glob(File.join(ENV["SPECWRK_OUT"], run_id, "*-report.json")).last
+          @most_recent_run_report_file ||= Dir.glob(File.join(ENV["SPECWRK_OUT"], "*-report-#{run_id}.json")).last
         end
       end
 
       class Shutdown < Base
-        def with_response
+        def response
           interupt! if ENV["SPECWRK_SRV_SINGLE_RUN"]
 
-          [200, {"Content-Type" => "text/plain"}, ["✌️"]]
+          [200, {"content-type" => "text/plain"}, ["✌️"]]
         end
 
         def interupt!

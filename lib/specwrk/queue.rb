@@ -4,7 +4,44 @@ require "time"
 require "json"
 
 module Specwrk
-  Queue = Class.new(Hash)
+  # Thread-safe Hash access
+  class Queue
+    attr_reader :created_at
+
+    def initialize(hash = {})
+      @created_at = Time.now
+
+      if block_given?
+        @mutex = Monitor.new # Reentrant locking is required here
+        # It's possible to enter the proc from two threads, so we need to ||= in case
+        # one thread has set a value prior to the yield.
+        hash.default_proc = proc { |h, key| @mutex.synchronize { yield(h, key) } }
+      end
+
+      @mutex ||= Mutex.new # Monitor is up-to 20% slower than Mutex, so if no block is given, use a mutex
+      @hash = hash
+    end
+
+    def synchronize(&blk)
+      if @mutex.owned?
+        yield(@hash)
+      else
+        @mutex.synchronize { yield(@hash) }
+      end
+    end
+
+    def method_missing(name, *args, &block)
+      if @hash.respond_to?(name)
+        @mutex.synchronize { @hash.public_send(name, *args, &block) }
+      else
+        super
+      end
+    end
+
+    def respond_to_missing?(name, include_private = false)
+      @hash.respond_to?(name, include_private) || super
+    end
+  end
 
   class PendingQueue < Queue
     def shift_bucket
@@ -44,12 +81,12 @@ module Specwrk
     end
 
     def merge_with_previous_run_times!(h2)
-      h2.each { |_id, example| merge_example(example) }
+      synchronize do
+        h2.each { |_id, example| merge_example(example) }
 
-      # Sort by exepcted run time, slowest to fastest
-      new_h = sort_by { |_, example| example[:expected_run_time] }.reverse.to_h
-      clear
-      merge!(new_h)
+        # Sort by exepcted run time, slowest to fastest
+        @hash = @hash.sort_by { |_, example| example[:expected_run_time] }.reverse.to_h
+      end
     end
 
     private
@@ -67,15 +104,17 @@ module Specwrk
     def bucket_by_file
       bucket = []
 
-      key = keys.first
-      return [] if key.nil?
+      @mutex.synchronize do
+        key = @hash.keys.first
+        break if key.nil?
 
-      file_path = self[key][:file_path]
-      each do |id, example|
-        next unless example[:file_path] == file_path
+        file_path = @hash[key][:file_path]
+        @hash.each do |id, example|
+          next unless example[:file_path] == file_path
 
-        bucket << example
-        delete id
+          bucket << example
+          @hash.delete id
+        end
       end
 
       bucket
@@ -85,27 +124,30 @@ module Specwrk
     def bucket_by_timings
       bucket = []
 
-      estimated_run_time_total = 0
+      @mutex.synchronize do
+        estimated_run_time_total = 0
 
-      while estimated_run_time_total < run_time_bucket_threshold
-        key = keys.first
-        break if key.nil?
+        while estimated_run_time_total < run_time_bucket_threshold
+          key = @hash.keys.first
+          break if key.nil?
 
-        estimated_run_time_total += dig(key, :expected_run_time)
-        break if estimated_run_time_total > run_time_bucket_threshold && bucket.length.positive?
+          estimated_run_time_total += @hash.dig(key, :expected_run_time)
+          break if estimated_run_time_total > run_time_bucket_threshold && bucket.length.positive?
 
-        bucket << self[key]
-        delete key
+          bucket << @hash[key]
+          @hash.delete key
+        end
       end
 
       bucket
     end
 
+    # Ensure @mutex is held when calling this method
     def merge_example(example)
-      return if key? example[:id]
-      return if key? example[:file_path]
+      return if @hash.key? example[:id]
+      return if @hash.key? example[:file_path]
 
-      self[example[:id]] = if previous_run_times
+      @hash[example[:id]] = if previous_run_times
         example.merge!(
           expected_run_time: previous_run_times.dig(:examples, example[:id].to_sym, :run_time) || 99999.9 # run "unknown" files first
         )
@@ -123,24 +165,26 @@ module Specwrk
     end
 
     def dump
-      @run_times = []
-      @first_started_at = Time.new(2999, 1, 1, 0, 0, 0) # TODO: Make future proof /s
-      @last_finished_at = Time.new(1900, 1, 1, 0, 0, 0)
+      @mutex.synchronize do
+        @run_times = []
+        @first_started_at = Time.new(2999, 1, 1, 0, 0, 0) # TODO: Make future proof /s
+        @last_finished_at = Time.new(1900, 1, 1, 0, 0, 0)
 
-      @output = {
-        file_totals: Hash.new { |h, filename| h[filename] = 0.0 },
-        meta: {failures: 0, passes: 0, pending: 0},
-        examples: {}
-      }
+        @output = {
+          file_totals: Hash.new { |h, filename| h[filename] = 0.0 },
+          meta: {failures: 0, passes: 0, pending: 0},
+          examples: {}
+        }
 
-      values.each { |example| calculate(example) }
+        @hash.values.each { |example| calculate(example) }
 
-      @output[:meta][:total_run_time] = @run_times.sum
-      @output[:meta][:average_run_time] = @output[:meta][:total_run_time] / [@run_times.length, 1].max.to_f
-      @output[:meta][:first_started_at] = @first_started_at.iso8601(6)
-      @output[:meta][:last_finished_at] = @last_finished_at.iso8601(6)
+        @output[:meta][:total_run_time] = @run_times.sum
+        @output[:meta][:average_run_time] = @output[:meta][:total_run_time] / [@run_times.length, 1].max.to_f
+        @output[:meta][:first_started_at] = @first_started_at.iso8601(6)
+        @output[:meta][:last_finished_at] = @last_finished_at.iso8601(6)
 
-      @output
+        @output
+      end
     end
 
     private

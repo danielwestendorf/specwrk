@@ -177,4 +177,109 @@ RSpec.describe Specwrk::Web::App do
       it { is_expected.to eq 104 }
     end
   end
+
+  describe "#reaper" do
+    let(:instance) { described_class.new }
+
+    it "loops calling #reap until Specwrk.force_quit" do
+      stub_const("ENV", {"SPECWRK_SRV_SINGLE_RUN" => "1"}) # make sure the thread doesn't start for the test
+
+      count = 0
+
+      expect(Specwrk).to receive(:force_quit).exactly(6).times do
+        count += 1
+        count == 6
+      end
+
+      expect(instance).to receive(:sleep)
+        .with(330)
+        .exactly(5).times
+
+      expect(instance).to receive(:reap)
+        .exactly(5).times
+
+      instance.reaper
+    end
+  end
+
+  describe "#reap" do
+    subject { instance.reap }
+
+    let(:instance) { described_class.new }
+    let(:now) { Time.now }
+
+    before do
+      allow(Time).to receive(:now)
+        .and_return(now)
+
+      Specwrk::Web.clear_queues
+    end
+
+    context "no runs yet" do
+      it "does nothing and raises no error" do
+        expect(Specwrk::Web).not_to receive(:clear_run_queues)
+
+        expect { subject }.not_to raise_error
+      end
+    end
+
+    context "no most_recent_last_seen_at" do
+      before do
+        # All workers have nil last_seen_at
+        Specwrk::Web::WORKERS[:run1] = {
+          worker1: {last_seen_at: nil},
+          worker2: {last_seen_at: nil}
+        }
+      end
+
+      it "does not clear any run queues" do
+        expect(Specwrk::Web).not_to receive(:clear_run_queues)
+
+        expect { subject }.not_to raise_error
+      end
+    end
+
+    context "most_recent_last_seen_at not > 330 sec old" do
+      before do
+        Specwrk::Web::WORKERS[:run1] = {
+          worker1: {last_seen_at: now - 300},
+          worker2: {last_seen_at: now - 200}
+        }
+      end
+
+      it "does not clear any run queues when not stale enough" do
+        expect(Specwrk::Web).not_to receive(:clear_run_queues)
+
+        expect { subject }.not_to raise_error
+      end
+    end
+
+    context "most recent last_seen_at > 330 sec old" do
+      before do
+        Specwrk::Web::WORKERS[:run1] = {
+          worker1: {last_seen_at: now - 400},
+          worker2: {last_seen_at: now - 350}
+        }
+        Specwrk::Web::WORKERS[:run2] = {
+          worker1: {last_seen_at: now - 500}
+        }
+        Specwrk::Web::WORKERS[:run3] = {
+          worker1: {last_seen_at: now - 300}
+        }
+      end
+
+      it "clears the stale run queues for each stale run" do
+        expect(Specwrk::Web).to receive(:clear_run_queues)
+          .with(:run1)
+
+        expect(Specwrk::Web).to receive(:clear_run_queues)
+          .with(:run2)
+
+        expect(Specwrk::Web).not_to receive(:clear_run_queues)
+          .with(:run3)
+
+        expect { subject }.not_to raise_error
+      end
+    end
+  end
 end
