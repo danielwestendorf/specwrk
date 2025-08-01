@@ -7,40 +7,24 @@ require "specwrk/store/file_adapter"
 
 module Specwrk
   class Store
-    MUTEXES = {}
-    MUTEXES_MUTEX = Mutex.new # 🐢🐢🐢🐢
-
-    class << self
-      def mutex_for(path)
-        MUTEXES_MUTEX.synchronize do
-          MUTEXES[path] ||= Mutex.new
-        end
-      end
-    end
-
-    def initialize(path, thread_safe_reads: true)
+    def initialize(path)
       @path = path
-      @thread_safe_reads = thread_safe_reads
     end
 
     def [](key)
-      sync(thread_safe: thread_safe_reads) { adapter[key.to_s] }
+      adapter[key.to_s]
     end
 
     def multi_read(*keys)
-      sync(thread_safe: thread_safe_reads) { adapter.multi_read(*keys) }
+      adapter.multi_read(*keys)
     end
 
     def []=(key, value)
-      sync do
-        adapter[key.to_s] = value
-      end
+      adapter[key.to_s] = value
     end
 
     def keys
-      all_keys = sync(thread_safe: thread_safe_reads) do
-        adapter.keys
-      end
+      all_keys = adapter.keys
 
       all_keys.reject { |k| k.start_with? "____" }
     end
@@ -54,28 +38,24 @@ module Specwrk
     end
 
     def empty?
-      sync(thread_safe: thread_safe_reads) do
-        adapter.empty?
-      end
+      adapter.empty?
     end
 
     def delete(*keys)
-      sync { adapter.delete(*keys) }
+      adapter.delete(*keys)
     end
 
     def merge!(h2)
       h2.transform_keys!(&:to_s)
-      sync { adapter.merge!(h2) }
+      adapter.merge!(h2)
     end
 
     def clear
-      sync { adapter.clear }
+      adapter.clear
     end
 
     def to_h
-      sync(thread_safe: thread_safe_reads) do
-        adapter.multi_read(*keys).transform_keys!(&:to_sym)
-      end
+      adapter.multi_read(*keys).transform_keys!(&:to_sym)
     end
 
     def inspect
@@ -91,16 +71,6 @@ module Specwrk
     end
 
     private
-
-    attr_reader :thread_safe_reads
-
-    def sync(thread_safe: true)
-      if !thread_safe || mutex.owned?
-        yield
-      else
-        mutex.synchronize { yield }
-      end
-    end
 
     def adapter
       @adapter ||= FileAdapter.new(@path)
@@ -123,15 +93,13 @@ module Specwrk
     end
 
     def shift_bucket
-      sync do
-        return bucket_by_file unless run_time_bucket_maximum&.positive?
+      return bucket_by_file unless run_time_bucket_maximum&.positive?
 
-        case ENV["SPECWRK_SRV_GROUP_BY"]
-        when "file"
-          bucket_by_file
-        else
-          bucket_by_timings
-        end
+      case ENV["SPECWRK_SRV_GROUP_BY"]
+      when "file"
+        bucket_by_file
+      else
+        bucket_by_timings
       end
     end
 

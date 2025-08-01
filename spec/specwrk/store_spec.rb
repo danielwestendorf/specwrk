@@ -7,40 +7,18 @@ require "specwrk/store"
 
 RSpec.describe Specwrk::Store do
   let(:path) { File.join(Dir.mktmpdir, Process.pid.to_s) }
-  let(:thread_safe) { true }
-  let(:instance) { described_class.new(path, thread_safe_reads: thread_safe) }
+  let(:instance) { described_class.new(path) }
 
   before { instance.clear }
-
-  describe ".mutex_for" do
-    subject { described_class.mutex_for path }
-
-    let!(:mutex) { described_class.mutex_for path }
-
-    it { is_expected.to eq(mutex) }
-  end
 
   describe "#[]" do
     subject { instance[:foo] }
 
-    let!(:mutex) { described_class.mutex_for path }
-
     before do
       instance[:foo] = "bar"
-      allow(mutex).to receive(:synchronize).and_return("baz")
     end
 
-    context "thread_safe_reads" do
-      let(:thread_safe) { true }
-
-      it { is_expected.to eq("baz") }
-    end
-
-    context "unsafe thread reads" do
-      let(:thread_safe) { false }
-
-      it { is_expected.to eq("bar") }
-    end
+    it { is_expected.to eq("bar") }
   end
 
   describe "#[]=" do
@@ -52,26 +30,13 @@ RSpec.describe Specwrk::Store do
   describe "#keys" do
     subject { instance.keys }
 
-    let!(:mutex) { described_class.mutex_for path }
-
     before do
       instance["a"] = 1
       instance["____secret"] = 2
       instance["b"] = 3
-
-      allow(mutex).to receive(:synchronize).and_return(["baz"])
     end
 
-    context "thread_safe_reads" do
-      let(:thread_safe) { true }
-
-      it { is_expected.to contain_exactly("baz") }
-    end
-
-    context "unsafe thread reads" do
-      let(:thread_safe) { false }
-      it { is_expected.to contain_exactly("a", "b") }
-    end
+    it { is_expected.to eq(%w[a b]) }
   end
 
   describe "#length" do
@@ -109,24 +74,11 @@ RSpec.describe Specwrk::Store do
   describe "#inspect" do
     subject { instance.inspect }
 
-    let!(:mutex) { described_class.mutex_for path }
-
     before do
       instance.merge!("foo" => 1, "baz" => 2)
-      allow(mutex).to receive(:synchronize).and_return("baz")
     end
 
-    context "thread_safe_reads" do
-      let(:thread_safe) { true }
-
-      it { is_expected.to eq("baz") }
-    end
-
-    context "unsafe thread reads" do
-      let(:thread_safe) { false }
-
-      it { is_expected.to eq(foo: 1, baz: 2) }
-    end
+    it { is_expected.to eq(foo: 1, baz: 2) }
   end
 end
 

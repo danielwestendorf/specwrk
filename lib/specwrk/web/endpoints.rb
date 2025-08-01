@@ -83,11 +83,11 @@ module Specwrk
         end
 
         def metadata
-          @metadata ||= Store.new(File.join(datastore_path, "metadata"), thread_safe_reads: false)
+          @metadata ||= Store.new(File.join(datastore_path, "metadata"))
         end
 
         def run_times
-          @run_times ||= Store.new(File.join(ENV["SPECWRK_OUT"], "run_times"), thread_safe_reads: false)
+          @run_times ||= Store.new(File.join(ENV["SPECWRK_OUT"], "run_times"))
         end
 
         def worker
