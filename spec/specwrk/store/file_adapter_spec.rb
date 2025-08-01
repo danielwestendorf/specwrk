@@ -4,37 +4,6 @@ require "tmpdir"
 
 require "specwrk/store/file_adapter"
 
-RSpec.describe Specwrk::Store::FileAdapter::THREAD_POOL do
-  let(:klass) do
-    Class.new do
-      attr_accessor :result
-
-      def process
-        1
-      end
-    end
-  end
-
-  it "processes the work when able" do
-    instance = klass.new
-    result = Queue.new
-
-    100.times do
-      described_class.schedule do
-        result << instance.process
-      end
-    end
-
-    Thread.pass until result.length == 100
-
-    100.times do
-      expect(result.pop).to eq(1)
-    end
-
-    expect(result.empty?).to eq(true)
-  end
-end
-
 RSpec.describe Specwrk::Store::FileAdapter do
   let(:path) { File.join(Dir.tmpdir, SecureRandom.uuid).tap { |path| FileUtils.mkdir_p(path) } }
   let(:instance) { described_class.new(path) }
@@ -52,6 +21,37 @@ RSpec.describe Specwrk::Store::FileAdapter do
 
   def current_filenames
     Dir.glob(File.join(path, "*#{Specwrk::Store::FileAdapter::EXT}"))
+  end
+
+  describe ".schedule_work" do
+    let(:klass) do
+      Class.new do
+        attr_accessor :result
+
+        def process
+          1
+        end
+      end
+    end
+
+    it "processes the work when able" do
+      instance = klass.new
+      result = Queue.new
+
+      100.times do
+        described_class.schedule_work do
+          result << instance.process
+        end
+      end
+
+      Thread.pass until result.length == 100
+
+      100.times do
+        expect(result.pop).to eq(1)
+      end
+
+      expect(result.empty?).to eq(true)
+    end
   end
 
   describe "#[]" do

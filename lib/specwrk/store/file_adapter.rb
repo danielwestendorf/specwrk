@@ -10,20 +10,24 @@ module Specwrk
     class FileAdapter
       EXT = ".wrk.json"
 
-      THREAD_POOL = Class.new do
-        @work_queue = Queue.new
+      @work_queue = Queue.new
+      @threads = []
 
-        @threads = Array.new(ENV.fetch("SPECWRK_SRV_FILE_ADAPTER_THREAD_COUNT", "4").to_i) do
-          Thread.new do
-            loop do
-              @work_queue.pop.call
-            end
-          end
+      class << self
+        def schedule_work(&blk)
+          start_threads!
+          @work_queue.push blk
         end
 
-        class << self
-          def schedule(&blk)
-            @work_queue.push blk
+        def start_threads!
+          return if @threads.length.positive?
+
+          Array.new(ENV.fetch("SPECWRK_THREAD_COUNT", "4").to_i) do
+            @threads << Thread.new do
+              loop do
+                @work_queue.pop.call
+              end
+            end
           end
         end
       end
@@ -80,7 +84,7 @@ module Specwrk
         result_queue = Queue.new
 
         read_keys.each do |key|
-          THREAD_POOL.schedule do
+          self.class.schedule_work do
             result_queue.push([key.to_s, read(key)])
           end
         end
@@ -107,7 +111,7 @@ module Specwrk
         hash_with_filenames.each do |key, (filename, value)|
           content = JSON.generate(value)
 
-          THREAD_POOL.schedule do
+          self.class.schedule_work do
             result_queue << write(filename, content)
           end
         end
