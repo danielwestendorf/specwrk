@@ -196,6 +196,7 @@ RSpec.describe Specwrk::Client do
         expect { subject }.to raise_error(Specwrk::WaitingForSeedError)
       end
     end
+
     context "when response is 404" do
       before do
         stub_request(:post, "#{base_uri}/pop").to_return(status: 404)
@@ -240,6 +241,55 @@ RSpec.describe Specwrk::Client do
 
       it "raises an UnhandledResponseError" do
         expect { subject }.to raise_error(Specwrk::UnhandledResponseError, /500: boom/)
+      end
+    end
+  end
+
+  describe "#complete_and_fetch_examples" do
+    subject { client.complete_and_fetch_examples(payload) }
+
+    let(:client) { described_class.new }
+    let(:payload) { [{id: 1}] }
+
+    context "when response is 200" do
+      let(:examples) { [{id: 1, name: "example"}] }
+
+      before do
+        stub_request(:post, "#{base_uri}/complete_and_pop")
+          .with(headers: headers)
+          .to_return(status: 200, body: examples.to_json)
+      end
+
+      it { is_expected.to eq(examples) }
+    end
+
+    context "when response is 204" do
+      before do
+        stub_request(:post, "#{base_uri}/complete_and_pop").to_return(status: 204)
+      end
+
+      it "raises WaitingForSeedError" do
+        expect { subject }.to raise_error(Specwrk::WaitingForSeedError)
+      end
+    end
+
+    context "when response is 404" do
+      before do
+        stub_request(:post, "#{base_uri}/complete_and_pop").to_return(status: 404)
+      end
+
+      it "raises NoMoreExamplesError" do
+        expect { subject }.to raise_error(Specwrk::NoMoreExamplesError)
+      end
+    end
+
+    context "when response is unknown" do
+      before do
+        stub_request(:post, "#{base_uri}/complete_and_pop").to_return(status: 500, body: "fail")
+      end
+
+      it "raises UnhandledResponseError" do
+        expect { subject }.to raise_error(Specwrk::UnhandledResponseError, /500: fail/)
       end
     end
   end

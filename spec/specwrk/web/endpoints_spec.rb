@@ -83,28 +83,13 @@ RSpec.describe Specwrk::Web::Endpoints do
       let(:request_method) { "POST" }
       let(:body) { JSON.generate([{id: "a.rb:1", file_path: "a.rb", run_time: 0.1}]) }
 
-      context "SPECWRK_SRV_SINGLE_SEED_PER_RUN and pending already has examples" do
-        let(:env_vars) { {"SPECWRK_OUT" => base_path, "SPECWRK_SRV_SINGLE_SEED_PER_RUN" => "1"} }
-        let(:existing_pending_data) { {"b.rb:1" => {id: "b.rb:1", file_path: "b.rb", expected_run_time: 0.1}} }
-
-        it { is_expected.to eq(ok) }
-        it { expect { subject }.not_to change(pending, :inspect) }
-      end
-
-      context "SPECWRK_SRV_SINGLE_SEED_PER_RUN but pending is empty" do
-        let(:env_vars) { {"SPECWRK_OUT" => base_path, "SPECWRK_SRV_SINGLE_SEED_PER_RUN" => "1"} }
-
-        it { is_expected.to eq(ok) }
-        it { expect { subject }.to change(pending, :inspect).from({}).to("a.rb:1": instance_of(Hash)) }
-      end
-
-      context "examples get merged into pending queue" do
+      context "pending store reset with examples" do
         let(:env_vars) { {"SPECWRK_OUT" => base_path, "SPECWRK_SRV_SINGLE_SEED_PER_RUN" => nil} }
 
         let(:existing_pending_data) { {"b.rb:2" => {id: "b.rb:2", file_path: "b.rb", expected_run_time: 0.1}} }
 
         it { is_expected.to eq(ok) }
-        it { expect { subject }.to change(pending, :inspect).from("b.rb:2": instance_of(Hash)).to("b.rb:2": instance_of(Hash), "a.rb:1": instance_of(Hash)) }
+        it { expect { subject }.to change(pending, :inspect).from("b.rb:2": instance_of(Hash)).to("a.rb:1": instance_of(Hash)) }
       end
 
       context "merged with expected_run_time sorted by file" do
@@ -143,8 +128,7 @@ RSpec.describe Specwrk::Web::Endpoints do
     end
 
     describe Specwrk::Web::Endpoints::Complete do
-      let(:request_method) { "PUT" }
-      let(:report_file_path_pattern) { File.join(datastore_path, "*-report.json") }
+      let(:request_method) { "POST" }
       let(:body) {
         JSON.generate([
           {id: "a.rb:1", file_path: "a.rb", run_time: 0.1, started_at: Time.now.iso8601, finished_at: Time.now.iso8601},
@@ -211,6 +195,61 @@ RSpec.describe Specwrk::Web::Endpoints do
       end
 
       it { is_expected.to eq([200, {"Content-Type" => "application/json"}, [JSON.generate(foo: "bar")]]) }
+    end
+
+    describe Specwrk::Web::Endpoints::CompleteAndPop do
+      let(:request_method) { "POST" }
+
+      let(:body) {
+        JSON.generate([
+          {id: "a.rb:1", file_path: "a.rb", run_time: 0.1, started_at: Time.now.iso8601, finished_at: Time.now.iso8601},
+          {id: "a.rb:3", file_path: "a.rb", run_time: 0.1, started_at: Time.now.iso8601, finished_at: Time.now.iso8601}
+        ])
+      }
+
+      context "completes examples" do
+        let(:existing_processing_data) do
+          {
+            "a.rb:1": {id: "a.rb:1", file_path: "a.rb", expected_run_time: 0.1},
+            "a.rb:2": {id: "a.rb:2", file_path: "a.rb", expected_run_time: 0.1}
+          }
+        end
+
+        it { is_expected.to eq([404, {"Content-Type" => "text/plain"}, ["This is not the path you're looking for, 'ol chap..."]]) } # 404 since there are no more items in the pending queue
+        it { expect { subject }.to change { run_times.reload.length }.from(0).to(2) }
+        it { expect { subject }.to change { processing.reload.length }.from(2).to(1) }
+        it { expect { subject }.to change { completed.reload.length }.from(0).to(1) }
+      end
+
+      context "successfully pops an item off the queue" do
+        let(:existing_pending_data) do
+          {"a.rb:2": {id: "a.rb:2", file_path: "a.rb", expected_run_time: 0.1}}
+        end
+
+        it { is_expected.to eq([200, {"Content-Type" => "application/json"}, [JSON.generate([{id: "a.rb:2", file_path: "a.rb", expected_run_time: 0.1}])]]) }
+        it { expect { subject }.to change { pending.reload.length }.from(1).to(0) }
+        it { expect { subject }.to change { processing.reload.length }.from(0).to(1) }
+      end
+
+      context "no items in any queue" do
+        it { is_expected.to eq([204, {"Content-Type" => "text/plain"}, ["Waiting for sample to be seeded."]]) }
+      end
+
+      context "no items in the processing queue, but completed queue has items" do
+        let(:existing_completed_data) do
+          {"a.rb:2": {id: "a.rb:2", file_path: "a.rb", expected_run_time: 0.1}}
+        end
+
+        it { is_expected.to eq([410, {"Content-Type" => "text/plain"}, ["That's a good lad. Run along now and go home."]]) }
+      end
+
+      context "no items in the pending queue, but something in the processing queue" do
+        let(:existing_processing_data) do
+          {"a.rb:2": {id: "a.rb:2", file_path: "a.rb", expected_run_time: 0.1}}
+        end
+
+        it { is_expected.to eq([404, {"Content-Type" => "text/plain"}, ["This is not the path you're looking for, 'ol chap..."]]) }
+      end
     end
   end
 

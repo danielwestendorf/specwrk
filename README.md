@@ -58,7 +58,6 @@ Options:
   --port=VALUE, -p VALUE            # Server port. Overrides SPECWRK_SRV_PORT, default: "5138"
   --bind=VALUE, -b VALUE            # Server bind address. Overrides SPECWRK_SRV_BIND, default: "127.0.0.1"
   --group-by=VALUE                  # How examples will be grouped for workers; fallback to file if no timings are found. Overrides SPECWERK_SRV_GROUP_BY: (file/timings), default: "timings"
-  --[no-]single-seed-per-run        # Only allow one seed per run. Useful for CI where many nodes may seed at the same time, default: false
   --[no-]verbose                    # Run in verbose mode. Default false., default: false
   --help, -h                        # Print this help
 ```
@@ -83,7 +82,6 @@ Options:
   --key=VALUE, -k VALUE             # Authentication key clients must use for access. Overrides SPECWRK_SRV_KEY, default: ""
   --output=VALUE, -o VALUE          # Directory where worker output is stored. Overrides SPECWRK_OUT, default: ".specwrk/"
   --group-by=VALUE                  # How examples will be grouped for workers; fallback to file if no timings are found. Overrides SPECWERK_SRV_GROUP_BY: (file/timings), default: "timings"
-  --[no-]single-seed-per-run        # Only allow one seed per run. Useful for CI where many nodes may seed at the same time, default: false
   --[no-]verbose                    # Run in verbose mode. Default false., default: false
   --[no-]single-run                 # Act on shutdown requests from clients. Default: false., default: false
   --help, -h                        # Print this help

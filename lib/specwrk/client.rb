@@ -105,6 +105,23 @@ module Specwrk
       (response.code == "200") ? true : raise(UnhandledResponseError.new("#{response.code}: #{response.body}"))
     end
 
+    def complete_and_fetch_examples(examples)
+      response = post "/complete_and_pop", body: examples.to_json
+
+      case response.code
+      when "200"
+        JSON.parse(response.body, symbolize_names: true)
+      when "204"
+        raise WaitingForSeedError
+      when "404"
+        raise NoMoreExamplesError
+      when "410"
+        raise CompletedAllExamplesError
+      else
+        raise UnhandledResponseError.new("#{response.code}: #{response.body}")
+      end
+    end
+
     def seed(examples)
       response = post "/seed", body: examples.to_json
 

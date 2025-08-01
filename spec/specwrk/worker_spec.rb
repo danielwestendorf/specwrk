@@ -22,6 +22,7 @@ RSpec.describe Specwrk::Worker do
   before do
     allow(Specwrk::Client).to receive(:new)
       .and_return(client)
+
     allow(Specwrk::Worker::Executor).to receive(:new)
       .and_return(executor)
 
@@ -228,18 +229,22 @@ RSpec.describe Specwrk::Worker do
   end
 
   describe "#complete_examples" do
-    it "tries completing examples" do
-      expect(client).to receive(:complete_examples).with(executor.examples)
+    it "tries completing examples and fetching new ones" do
+      expect(client).to receive(:complete_and_fetch_examples)
+        .with(executor.examples)
+        .and_return("foobar")
 
       instance.complete_examples
+
+      expect(instance.instance_variable_get(:@next_examples)).to eq("foobar")
     end
 
     it "tries completing examples again when an unhandled error is raised" do
-      expect(client).to receive(:complete_examples).with(executor.examples)
+      expect(client).to receive(:complete_and_fetch_examples).with(executor.examples)
         .and_raise(Specwrk::UnhandledResponseError, "oops")
         .ordered
 
-      expect(client).to receive(:complete_examples).with(executor.examples)
+      expect(client).to receive(:complete_and_fetch_examples).with(executor.examples)
         .ordered
 
       expect(instance).to receive(:warn)

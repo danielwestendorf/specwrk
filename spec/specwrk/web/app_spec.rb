@@ -172,9 +172,18 @@ RSpec.describe Specwrk::Web::App do
       let(:http_method) { "GET" }
       let(:path) { "/bogus" }
 
-      before { stub_endpoint(Specwrk::Web::Endpoints::NotFound, 104) }
+      before { stub_endpoint(Specwrk::Web::Endpoints::NotFound, 106) }
 
-      it { is_expected.to eq 104 }
+      it { is_expected.to eq 106 }
+    end
+
+    context "POST /complete_and_pop" do
+      let(:http_method) { "POST" }
+      let(:path) { "/complete_and_pop" }
+
+      before { stub_endpoint(Specwrk::Web::Endpoints::CompleteAndPop, 107) }
+
+      it { is_expected.to eq 107 }
     end
   end
 end

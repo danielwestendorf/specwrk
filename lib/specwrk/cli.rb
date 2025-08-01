@@ -76,7 +76,6 @@ module Specwrk
         base.unique_option :key, type: :string, aliases: ["-k"], default: ENV.fetch("SPECWRK_SRV_KEY", ""), desc: "Authentication key clients must use for access. Overrides SPECWRK_SRV_KEY"
         base.unique_option :output, type: :string, default: ENV.fetch("SPECWRK_OUT", ".specwrk/"), aliases: ["-o"], desc: "Directory where worker output is stored. Overrides SPECWRK_OUT"
         base.unique_option :group_by, values: %w[file timings], default: ENV.fetch("SPECWERK_SRV_GROUP_BY", "timings"), desc: "How examples will be grouped for workers; fallback to file if no timings are found. Overrides SPECWERK_SRV_GROUP_BY"
-        base.unique_option :single_seed_per_run, type: :boolean, default: false, desc: "Only allow one seed per run. Useful for CI where many nodes may seed at the same time"
         base.unique_option :verbose, type: :boolean, default: false, desc: "Run in verbose mode. Default false."
       end
 
@@ -211,7 +210,8 @@ module Specwrk
           status "Server responding ✓"
           status "Seeding #{examples.length} examples..."
           Client.new.seed(examples)
-          status "Samples seeded ✓"
+          file_count = examples.group_by { |e| e[:file_path] }.keys.size
+          status "🌱 Seeded #{examples.size} examples across #{file_count} files"
         end
 
         if Specwrk.wait_for_pids_exit([seed_pid]).value?(1)

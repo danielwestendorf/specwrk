@@ -137,17 +137,15 @@ module Specwrk
 
       class Seed < Base
         def before_lock
-          examples_with_run_times if persist_seeds?
+          examples_with_run_times
         end
 
         def with_response
-          if persist_seeds?
-            new_run_time_bucket_maximums = [pending.run_time_bucket_maximum, @seeds_run_time_bucket_maximum.to_f].compact
-            pending.run_time_bucket_maximum = new_run_time_bucket_maximums.sum.to_f / new_run_time_bucket_maximums.length.to_f
+          pending.clear
+          new_run_time_bucket_maximums = [pending.run_time_bucket_maximum, @seeds_run_time_bucket_maximum.to_f].compact
+          pending.run_time_bucket_maximum = new_run_time_bucket_maximums.sum.to_f / new_run_time_bucket_maximums.length.to_f
 
-            pending.merge!(examples_with_run_times)
-          end
-
+          pending.merge!(examples_with_run_times)
           processing.clear
           completed.clear
 
@@ -192,10 +190,6 @@ module Specwrk
           (mean + Math.sqrt(variance)).round(2)
         end
 
-        def persist_seeds?
-          ENV["SPECWRK_SRV_SINGLE_SEED_PER_RUN"].nil? || pending.empty?
-        end
-
         def sort_by
           if ENV["SPECWRK_SRV_GROUP_BY"] == "file" || run_times.empty?
             :file
@@ -207,6 +201,7 @@ module Specwrk
 
       class Complete < Base
         def with_response
+          warn "[DEPRECATED] This endpoint will be retired in favor of CompleteAndPop. Upgrade your clients."
           completed.merge!(completed_examples)
           processing.delete(*completed_examples.keys)
 
@@ -243,6 +238,51 @@ module Specwrk
           else
             not_found
           end
+        end
+      end
+
+      class CompleteAndPop < Base
+        def with_response
+          completed.merge!(completed_examples)
+          run_times.merge! run_time_data
+          processing.delete(*completed_examples.keys)
+
+          @examples = pending.shift_bucket
+
+          processing_data = @examples.map { |example| [example[:id], example] }.to_h
+          processing.merge!(processing_data)
+
+          if @examples.any?
+            [200, {"Content-Type" => "application/json"}, [JSON.generate(@examples)]]
+          elsif pending.empty? && processing.empty? && completed.empty?
+            [204, {"Content-Type" => "text/plain"}, ["Waiting for sample to be seeded."]]
+          elsif completed.any? && processing.empty?
+            [410, {"Content-Type" => "text/plain"}, ["That's a good lad. Run along now and go home."]]
+          else
+            not_found
+          end
+        end
+
+        private
+
+        def before_lock
+          completed_examples
+          run_time_data
+        end
+
+        def completed_examples
+          @completed_data ||= payload.map { |example| [example[:id], example] if processing[example[:id]] }.compact.to_h
+        end
+
+        # We don't care about exact values here, just approximate run times are fine
+        # So if we overwrite run times from another process it is nbd
+        def after_lock
+          # run_time_data = payload.map { |example| [example[:id], example[:run_time]] }.to_h
+          # run_times.merge! run_time_data
+        end
+
+        def run_time_data
+          @run_time_data ||= payload.map { |example| [example[:id], example[:run_time]] }.to_h
         end
       end
 

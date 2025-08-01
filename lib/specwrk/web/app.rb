@@ -90,6 +90,8 @@ module Specwrk
           Endpoints::Pop
         when ["POST", "/complete"]
           Endpoints::Complete
+        when ["POST", "/complete_and_pop"]
+          Endpoints::CompleteAndPop
         when ["POST", "/seed"]
           Endpoints::Seed
         when ["GET", "/report"]
