@@ -74,13 +74,15 @@ module Specwrk
         base.unique_option :port, type: :integer, default: ENV.fetch("SPECWRK_SRV_PORT", "5138"), aliases: ["-p"], desc: "Server port. Overrides SPECWRK_SRV_PORT"
         base.unique_option :bind, type: :string, default: ENV.fetch("SPECWRK_SRV_BIND", "127.0.0.1"), aliases: ["-b"], desc: "Server bind address. Overrides SPECWRK_SRV_BIND"
         base.unique_option :key, type: :string, aliases: ["-k"], default: ENV.fetch("SPECWRK_SRV_KEY", ""), desc: "Authentication key clients must use for access. Overrides SPECWRK_SRV_KEY"
-        base.unique_option :output, type: :string, default: ENV.fetch("SPECWRK_OUT", ".specwrk/"), aliases: ["-o"], desc: "Directory where worker output is stored. Overrides SPECWRK_OUT"
+        base.unique_option :output, type: :string, default: ENV.fetch("SPECWRK_OUT", ".specwrk/"), aliases: ["-o"], desc: "Directory where worker or server output is stored. Overrides SPECWRK_OUT"
+        base.unique_option :store_uri, type: :string, desc: "Directory where server state is stored. Required for multi-node or multi-process servers."
         base.unique_option :group_by, values: %w[file timings], default: ENV.fetch("SPECWERK_SRV_GROUP_BY", "timings"), desc: "How examples will be grouped for workers; fallback to file if no timings are found. Overrides SPECWERK_SRV_GROUP_BY"
-        base.unique_option :verbose, type: :boolean, default: false, desc: "Run in verbose mode. Default false."
+        base.unique_option :verbose, type: :boolean, default: false, desc: "Run in verbose mode"
       end
 
-      on_setup do |port:, bind:, output:, key:, group_by:, verbose:, **|
+      on_setup do |port:, bind:, output:, key:, group_by:, verbose:, **opts|
         ENV["SPECWRK_OUT"] = Pathname.new(output).expand_path(Dir.pwd).to_s
+        ENV["SPECWRK_SRV_STORE_URI"] = opts[:store_uri] if opts.key? :store_uri
         ENV["SPECWRK_SRV_VERBOSE"] = "1" if verbose
 
         ENV["SPECWRK_SRV_PORT"] = port
@@ -158,7 +160,7 @@ module Specwrk
       include Servable
 
       desc "Start a queue server"
-      option :single_run, type: :boolean, default: false, desc: "Act on shutdown requests from clients. Default: false."
+      option :single_run, type: :boolean, default: false, desc: "Act on shutdown requests from clients"
 
       def call(single_run:, **args)
         ENV["SPECWRK_SRV_SINGLE_RUN"] = "1" if single_run

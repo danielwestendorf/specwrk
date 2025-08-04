@@ -51,14 +51,15 @@ Options:
   --key=VALUE, -k VALUE             # Authentication key clients must use for access. Overrides SPECWRK_SRV_KEY, default: ""
   --run=VALUE, -r VALUE             # The run identifier for this job execution. Overrides SPECWRK_RUN, default: "main"
   --timeout=VALUE, -t VALUE         # The amount of time to wait for the server to respond. Overrides SPECWRK_TIMEOUT, default: "5"
-  --id=VALUE                        # The identifier for this worker. Default specwrk-worker(-COUNT_INDEX), default: "specwrk-worker"
+  --id=VALUE                        # The identifier for this worker. Overrides SPECWRK_ID. If none provided one in the format of specwrk-worker-8_RAND_CHARS-COUNT_INDEX will be used
   --count=VALUE, -c VALUE           # The number of worker processes you want to start, default: 1
   --output=VALUE, -o VALUE          # Directory where worker output is stored. Overrides SPECWRK_OUT, default: ".specwrk/"
   --seed-waits=VALUE, -w VALUE      # Number of times the worker will wait for examples to be seeded to the server. 1sec between attempts. Overrides SPECWRK_SEED_WAITS, default: "10"
   --port=VALUE, -p VALUE            # Server port. Overrides SPECWRK_SRV_PORT, default: "5138"
   --bind=VALUE, -b VALUE            # Server bind address. Overrides SPECWRK_SRV_BIND, default: "127.0.0.1"
+  --store-uri=VALUE                 # Directory where server state is stored. Required for multi-node or multi-process servers.
   --group-by=VALUE                  # How examples will be grouped for workers; fallback to file if no timings are found. Overrides SPECWERK_SRV_GROUP_BY: (file/timings), default: "timings"
-  --[no-]verbose                    # Run in verbose mode. Default false., default: false
+  --[no-]verbose                    # Run in verbose mode, default: false
   --help, -h                        # Print this help
 ```
 
@@ -80,10 +81,11 @@ Options:
   --port=VALUE, -p VALUE            # Server port. Overrides SPECWRK_SRV_PORT, default: "5138"
   --bind=VALUE, -b VALUE            # Server bind address. Overrides SPECWRK_SRV_BIND, default: "127.0.0.1"
   --key=VALUE, -k VALUE             # Authentication key clients must use for access. Overrides SPECWRK_SRV_KEY, default: ""
-  --output=VALUE, -o VALUE          # Directory where worker output is stored. Overrides SPECWRK_OUT, default: ".specwrk/"
+  --output=VALUE, -o VALUE          # Directory where worker or server output is stored. Overrides SPECWRK_OUT, default: ".specwrk/"
+  --store-uri=VALUE                 # Directory where server state is stored. Required for multi-node or multi-process servers.
   --group-by=VALUE                  # How examples will be grouped for workers; fallback to file if no timings are found. Overrides SPECWERK_SRV_GROUP_BY: (file/timings), default: "timings"
-  --[no-]verbose                    # Run in verbose mode. Default false., default: false
-  --[no-]single-run                 # Act on shutdown requests from clients. Default: false., default: false
+  --[no-]verbose                    # Run in verbose mode, default: false
+  --[no-]single-run                 # Act on shutdown requests from clients, default: false
   --help, -h                        # Print this help
 ```
 
@@ -196,7 +198,7 @@ Start a persistent Queue Server given one of the following methods
 
 ### Configuring your Queue Server
 - Secure your server with a key either with the `SPECWRK_SRV_KEY` environment variable or `--key` CLI option
-- Configure the server output to be a persisted volume so your timings survive between restarts with  the `SPECWRK_OUT` environment variable or `--out` CLI option 
+- Configure the server output to be a persisted volume so your timings survive between system restarts with the `SPECWRK_SRV_STORE_URI` environment variable or `--store-uri` CLI option. By default, `memory:///` will be used for the run's data stores (so run data will no survive server restarts) while `file://#{Dir.tmpdir}` will be used for run timings. Pass `--store-uri file:///whatever/absolute/path` to store all data on disk (required for multiple server processes).
 
 See [specwrk serve --help](#specwrk-serve) for all possible configuration options.
 
