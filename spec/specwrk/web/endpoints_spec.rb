@@ -29,12 +29,12 @@ RSpec.describe Specwrk::Web::Endpoints do
   end
 
   describe "worker endpoints" do
-    let(:metadata) { Specwrk::Store.new(File.join(datastore_path, "metadata")) }
-    let(:run_times) { Specwrk::Store.new File.join(base_path, "run_times") }
-    let(:pending) { Specwrk::PendingStore.new File.join(datastore_path, "pending") }
-    let(:processing) { Specwrk::Store.new File.join(datastore_path, "processing") }
-    let(:completed) { Specwrk::CompletedStore.new File.join(datastore_path, "completed") }
-    let(:worker) { Specwrk::PendingStore.new File.join(datastore_path, "workers", worker_id.to_s) }
+    let(:metadata) { Specwrk::Store.new datastore_uri, "metadata" }
+    let(:run_times) { Specwrk::Store.new base_uri, "run_times" }
+    let(:pending) { Specwrk::PendingStore.new datastore_uri, "pending" }
+    let(:processing) { Specwrk::Store.new datastore_uri, "processing" }
+    let(:completed) { Specwrk::CompletedStore.new datastore_uri, "completed" }
+    let(:worker) { Specwrk::PendingStore.new datastore_uri, File.join("workers", worker_id.to_s) }
 
     let(:existing_run_times_data) { {} }
     let(:existing_pending_data) { {} }
@@ -44,9 +44,11 @@ RSpec.describe Specwrk::Web::Endpoints do
 
     let(:run_id) { "main" }
     let(:worker_id) { :"foobar-0" }
-    let(:datastore_path) { File.join(base_path, run_id).to_s }
-    let(:base_path) { File.join(Dir.tmpdir, Process.pid.to_s).to_s }
-    let(:env_vars) { {"SPECWRK_OUT" => base_path} }
+    let(:datastore_uri) { "file://#{datastore_path}" }
+    let(:datastore_path) { File.join(base_path, run_id) }
+    let(:base_uri) { "file://#{base_path}" }
+    let(:base_path) { File.join(Dir.tmpdir, SecureRandom.uuid) }
+    let(:env_vars) { {"SPECWRK_OUT" => base_path, "SPECWRK_SRV_STORE_URI" => base_uri} }
 
     before do
       stub_const("ENV", env_vars)
@@ -84,8 +86,6 @@ RSpec.describe Specwrk::Web::Endpoints do
       let(:body) { JSON.generate([{id: "a.rb:1", file_path: "a.rb", run_time: 0.1}]) }
 
       context "pending store reset with examples" do
-        let(:env_vars) { {"SPECWRK_OUT" => base_path, "SPECWRK_SRV_SINGLE_SEED_PER_RUN" => nil} }
-
         let(:existing_pending_data) { {"b.rb:2" => {id: "b.rb:2", file_path: "b.rb", expected_run_time: 0.1}} }
 
         it { is_expected.to eq(ok) }

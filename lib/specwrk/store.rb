@@ -1,14 +1,12 @@
 # frozen_string_literal: true
 
 require "time"
-require "json"
-
-require "specwrk/store/file_adapter"
 
 module Specwrk
   class Store
-    def initialize(path)
-      @path = path
+    def initialize(uri_string, scope)
+      @uri = URI(uri_string)
+      @scope = scope
     end
 
     def [](key)
@@ -72,12 +70,23 @@ module Specwrk
 
     private
 
+    attr_reader :uri, :scope
+
     def adapter
-      @adapter ||= FileAdapter.new(@path)
+      @adapter ||= adapter_klass.new uri, scope
     end
 
-    def mutex
-      @mutex ||= self.class.mutex_for(@path)
+    def adapter_klass
+      case uri.scheme
+      when "memory"
+        require "specwrk/store/memory_adapter" unless defined?(MemoryAdapter)
+
+        MemoryAdapter
+      when "file"
+        require "specwrk/store/file_adapter" unless defined?(FileAdapter)
+
+        FileAdapter
+      end
     end
   end
 

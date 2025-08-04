@@ -3,11 +3,11 @@
 require "json"
 require "base64"
 
-require "specwrk/store"
+require "specwrk/store/base_adapter"
 
 module Specwrk
   class Store
-    class FileAdapter
+    class FileAdapter < BaseAdapter
       EXT = ".wrk.json"
 
       @work_queue = Queue.new
@@ -30,11 +30,6 @@ module Specwrk
             end
           end
         end
-      end
-
-      def initialize(path)
-        @path = path
-        FileUtils.mkdir_p(@path)
       end
 
       def [](key)
@@ -60,8 +55,8 @@ module Specwrk
       end
 
       def clear
-        FileUtils.rm_rf(@path)
-        FileUtils.mkdir_p(@path)
+        FileUtils.rm_rf(path)
+        FileUtils.mkdir_p(path)
 
         @known_key_pairs = nil
       end
@@ -121,7 +116,7 @@ module Specwrk
       end
 
       def empty?
-        Dir.empty? @path
+        Dir.empty? path
       end
 
       private
@@ -141,7 +136,7 @@ module Specwrk
 
       def filename_for_key(key)
         File.join(
-          @path,
+          path,
           [
             counter_prefix(key),
             encode_key(key)
@@ -159,6 +154,12 @@ module Specwrk
         @counter ||= keys.length
       end
 
+      def path
+        @path ||= File.join(uri.path, scope).tap do |full_path|
+          FileUtils.mkdir_p(full_path)
+        end
+      end
+
       def encode_key(key)
         Base64.urlsafe_encode64(key).delete("=")
       end
@@ -171,11 +172,11 @@ module Specwrk
       end
 
       def known_key_pairs
-        @known_key_pairs ||= Dir.entries(@path).sort.map do |filename|
+        @known_key_pairs ||= Dir.entries(path).sort.map do |filename|
           next if filename.start_with? "."
           next unless filename.end_with? EXT
 
-          file_path = File.join(@path, filename)
+          file_path = File.join(path, filename)
           [decode_key(filename), file_path]
         end.compact.to_h
       end

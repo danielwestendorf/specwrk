@@ -5,8 +5,11 @@ require "tmpdir"
 require "specwrk/store/file_adapter"
 
 RSpec.describe Specwrk::Store::FileAdapter do
-  let(:path) { File.join(Dir.tmpdir, SecureRandom.uuid).tap { |path| FileUtils.mkdir_p(path) } }
-  let(:instance) { described_class.new(path) }
+  let(:path) { File.join(uri.path, scope).tap { |path| FileUtils.mkdir_p(path) } }
+  let(:uri) { URI("file://#{Dir.tmpdir}") }
+  let(:scope) { SecureRandom.uuid }
+
+  let(:instance) { described_class.new(uri, scope) }
 
   def write(key, value)
     @counter ||= -1

@@ -71,35 +71,31 @@ module Specwrk
         end
 
         def pending
-          @pending ||= PendingStore.new(File.join(datastore_path, "pending"))
+          @pending ||= PendingStore.new(ENV.fetch("SPECWRK_SRV_STORE_URI", "memory:///"), File.join(run_id, "pending"))
         end
 
         def processing
-          @processing ||= Store.new(File.join(datastore_path, "processing"))
+          @processing ||= Store.new(ENV.fetch("SPECWRK_SRV_STORE_URI", "memory:///"), File.join(run_id, "processing"))
         end
 
         def completed
-          @completed ||= CompletedStore.new(File.join(datastore_path, "completed"))
+          @completed ||= CompletedStore.new(ENV.fetch("SPECWRK_SRV_STORE_URI", "memory:///"), File.join(run_id, "completed"))
         end
 
         def metadata
-          @metadata ||= Store.new(File.join(datastore_path, "metadata"))
+          @metadata ||= Store.new(ENV.fetch("SPECWRK_SRV_STORE_URI", "memory:///"), File.join(run_id, "metadata"))
         end
 
         def run_times
-          @run_times ||= Store.new(File.join(ENV["SPECWRK_OUT"], "run_times"))
+          @run_times ||= Store.new(ENV.fetch("SPECWRK_SRV_STORE_URI", "file://#{File.join(Dir.tmpdir, "specwrk")}"), "run_times")
         end
 
         def worker
-          @worker ||= Store.new(File.join(datastore_path, "workers", request.get_header("HTTP_X_SPECWRK_ID").to_s))
+          @worker ||= Store.new(ENV.fetch("SPECWRK_SRV_STORE_URI", "memory:///"), File.join(run_id, "workers", request.get_header("HTTP_X_SPECWRK_ID").to_s))
         end
 
         def run_id
           request.get_header("HTTP_X_SPECWRK_RUN")
-        end
-
-        def run_report_file_path
-          @run_report_file_path ||= File.join(datastore_path, "#{started_at.strftime("%Y%m%dT%H%M%S")}-report.json").to_s
         end
 
         def datastore_path
@@ -244,7 +240,6 @@ module Specwrk
       class CompleteAndPop < Base
         def with_response
           completed.merge!(completed_examples)
-          run_times.merge! run_time_data
           processing.delete(*completed_examples.keys)
 
           @examples = pending.shift_bucket
@@ -277,8 +272,7 @@ module Specwrk
         # We don't care about exact values here, just approximate run times are fine
         # So if we overwrite run times from another process it is nbd
         def after_lock
-          # run_time_data = payload.map { |example| [example[:id], example[:run_time]] }.to_h
-          # run_times.merge! run_time_data
+          run_times.merge! run_time_data
         end
 
         def run_time_data

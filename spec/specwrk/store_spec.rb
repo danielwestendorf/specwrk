@@ -6,8 +6,10 @@ require "securerandom"
 require "specwrk/store"
 
 RSpec.describe Specwrk::Store do
-  let(:path) { File.join(Dir.mktmpdir, Process.pid.to_s) }
-  let(:instance) { described_class.new(path) }
+  let(:uri_string) { "file://#{Dir.tmpdir}" }
+  let(:scope) { SecureRandom.uuid }
+
+  let(:instance) { described_class.new(uri_string, scope) }
 
   before { instance.clear }
 
@@ -83,8 +85,10 @@ RSpec.describe Specwrk::Store do
 end
 
 RSpec.describe Specwrk::PendingStore do
-  let(:path) { File.join(Dir.mktmpdir, Process.pid.to_s) }
-  let(:instance) { described_class.new(path) }
+  let(:uri_string) { "file://#{Dir.tmpdir}" }
+  let(:scope) { SecureRandom.uuid }
+
+  let(:instance) { described_class.new(uri_string, scope) }
 
   before { instance.clear }
 
@@ -216,8 +220,10 @@ RSpec.describe Specwrk::PendingStore do
 end
 
 RSpec.describe Specwrk::CompletedStore do
-  let(:path) { File.join(Dir.mktmpdir, Process.pid.to_s) }
-  let(:instance) { described_class.new(path) }
+  let(:uri_string) { "file://#{Dir.tmpdir}" }
+  let(:scope) { SecureRandom.uuid }
+
+  let(:instance) { described_class.new(uri_string, scope) }
 
   before { instance.clear }
 
