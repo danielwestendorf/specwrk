@@ -51,11 +51,19 @@ module Specwrk
         end
 
         def not_found
-          [404, {"content-type" => "text/plain"}, ["This is not the path you're looking for, 'ol chap..."]]
+          if request.head?
+            [404, {}, []]
+          else
+            [404, {"content-type" => "text/plain"}, ["This is not the path you're looking for, 'ol chap..."]]
+          end
         end
 
         def ok
-          [200, {"content-type" => "text/plain"}, ["OK, 'ol chap"]]
+          if request.head?
+            [200, {}, []]
+          else
+            [200, {"content-type" => "text/plain"}, ["OK, 'ol chap"]]
+          end
         end
 
         def payload
@@ -108,7 +116,7 @@ module Specwrk
 
       class Health < Base
         def with_response
-          [200, {}, []]
+          ok
         end
       end
 

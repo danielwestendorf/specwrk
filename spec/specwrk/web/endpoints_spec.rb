@@ -263,6 +263,7 @@ RSpec.describe Specwrk::Web::Endpoints do
   end
 
   describe Specwrk::Web::Endpoints::Health do
+    let(:request_method) { "HEAD" }
     let(:run_id) { nil }
     let(:worker_id) { nil }
 
