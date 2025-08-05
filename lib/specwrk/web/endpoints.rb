@@ -242,10 +242,14 @@ module Specwrk
         def examples
           @examples ||= begin
             examples = pending.shift_bucket
-            completion_threshold = (Time.now + ((pending.run_time_bucket_maximum || 30) * 2)).to_i
+            maximum_completion_threshold = (Time.now + ((pending.run_time_bucket_maximum || 30) * 2)).to_i
 
             processing_data = examples.map do |example|
-              [example[:id], example.merge(completion_threshold: completion_threshold)]
+              example_run_time_completion_threshold = (Time.now + example.fetch(:expected_run_time, 0) * 2).to_i
+
+              [
+                example[:id], example.merge(completion_threshold: [maximum_completion_threshold, example_run_time_completion_threshold].max)
+              ]
             end
 
             processing.merge!(processing_data.to_h)
