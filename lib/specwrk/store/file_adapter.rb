@@ -14,6 +14,20 @@ module Specwrk
       @threads = []
 
       class << self
+        def with_lock(uri, key)
+          lock_file_path = File.join(uri.path, "#{key}.lock").tap do |path|
+            FileUtils.mkdir_p(uri.path)
+          end
+
+          lock_file = File.open(lock_file_path, "a")
+
+          Thread.pass until lock_file.flock(File::LOCK_EX)
+
+          yield
+        ensure
+          lock_file.flock(File::LOCK_UN)
+        end
+
         def schedule_work(&blk)
           start_threads!
           @work_queue.push blk

@@ -7,6 +7,12 @@ require "specwrk/store"
 module Specwrk
   class Store
     class BaseAdapter
+      class << self
+        def with_lock(_uri, _key)
+          yield
+        end
+      end
+
       def initialize(uri, scope)
         @uri = uri
         @scope = scope

@@ -98,21 +98,8 @@ module Specwrk
           request.get_header("HTTP_X_SPECWRK_RUN")
         end
 
-        def datastore_path
-          @datastore_path ||= File.join(ENV["SPECWRK_OUT"], run_id).to_s.tap do |path|
-            FileUtils.mkdir_p(path) unless File.directory?(path)
-          end
-        end
-
         def with_lock
-          Thread.pass until lock_file.flock(File::LOCK_EX)
-          yield
-        ensure
-          lock_file.flock(File::LOCK_UN)
-        end
-
-        def lock_file
-          @lock_file ||= File.open(File.join(datastore_path, "lock"), "a")
+          Store.with_lock(URI(ENV.fetch("SPECWRK_SRV_STORE_URI", "memory:///")), "server") { yield }
         end
       end
 

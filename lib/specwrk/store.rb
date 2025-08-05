@@ -4,6 +4,25 @@ require "time"
 
 module Specwrk
   class Store
+    class << self
+      def with_lock(uri, key)
+        adapter_klass(uri).with_lock(uri, key) { yield }
+      end
+
+      def adapter_klass(uri)
+        case uri.scheme
+        when "memory"
+          require "specwrk/store/memory_adapter" unless defined?(MemoryAdapter)
+
+          MemoryAdapter
+        when "file"
+          require "specwrk/store/file_adapter" unless defined?(FileAdapter)
+
+          FileAdapter
+        end
+      end
+    end
+
     def initialize(uri_string, scope)
       @uri = URI(uri_string)
       @scope = scope
@@ -73,20 +92,7 @@ module Specwrk
     attr_reader :uri, :scope
 
     def adapter
-      @adapter ||= adapter_klass.new uri, scope
-    end
-
-    def adapter_klass
-      case uri.scheme
-      when "memory"
-        require "specwrk/store/memory_adapter" unless defined?(MemoryAdapter)
-
-        MemoryAdapter
-      when "file"
-        require "specwrk/store/file_adapter" unless defined?(FileAdapter)
-
-        FileAdapter
-      end
+      @adapter ||= self.class.adapter_klass(uri).new uri, scope
     end
   end
 
