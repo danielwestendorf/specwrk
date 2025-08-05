@@ -245,10 +245,10 @@ module Specwrk
             maximum_completion_threshold = (Time.now + ((pending.run_time_bucket_maximum || 30) * 2)).to_i
 
             processing_data = examples.map do |example|
-              example_run_time_completion_threshold = (Time.now + example.fetch(:expected_run_time, 0) * 2).to_i
+              example_run_time_completion_threshold = (Time.now + example[:expected_run_time].to_f * 2).to_i
 
               [
-                example[:id], example.merge(completion_threshold: [maximum_completion_threshold, example_run_time_completion_threshold].max)
+                example[:id], example.merge(completion_threshold: [maximum_completion_threshold, example_run_time_completion_threshold].compact.max)
               ]
             end
 
