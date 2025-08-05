@@ -270,11 +270,6 @@ module Specwrk
 
         private
 
-        def before_lock
-          completed_examples
-          run_time_data
-        end
-
         def completed_examples
           @completed_data ||= payload.map { |example| [example[:id], example] if processing[example[:id]] }.compact.to_h
         end
