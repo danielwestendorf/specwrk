@@ -44,7 +44,7 @@ module Specwrk
       raise Errno::ECONNREFUSED unless connected
     end
 
-    attr_reader :last_request_at
+    attr_reader :last_request_at, :retry_count
 
     def initialize
       @mutex = Mutex.new
@@ -120,6 +120,16 @@ module Specwrk
       else
         raise UnhandledResponseError.new("#{response.code}: #{response.body}")
       end
+    rescue Net::OpenTimeout, Net::ReadTimeout, Net::WriteTimeout => e
+      @retry_count ||= 0
+      @retry_count += 1
+
+      raise e if @retry_count == 5
+
+      warn e
+      sleep @retry_count
+
+      retry
     end
 
     def seed(examples)
@@ -161,7 +171,7 @@ module Specwrk
     def make_request(request)
       @mutex.synchronize do
         @last_request_at = Time.now
-        @http.request(request)
+        @http.request(request).tap { @retry_count = 0 }
       end
     end
 

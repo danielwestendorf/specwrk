@@ -292,6 +292,41 @@ RSpec.describe Specwrk::Client do
         expect { subject }.to raise_error(Specwrk::UnhandledResponseError, /500: fail/)
       end
     end
+
+    context "when a network timeout happens a couple of times then succeeds" do
+      let(:examples) { [{id: 2, name: "retried example"}] }
+
+      before do
+        stub_request(:post, "#{base_uri}/complete_and_pop")
+          .with(headers: headers)
+          .to_raise(Net::OpenTimeout).then
+          .to_raise(Net::OpenTimeout).then
+          .to_return(status: 200, body: examples.to_json)
+      end
+
+      it "warns twice and then returns the parsed body, resets the retry count" do
+        expect(client).to receive(:warn).twice
+        expect(client).to receive(:sleep).exactly(2).times
+
+        expect(subject).to eq(examples)
+        expect(client.retry_count).to eq(0)
+      end
+    end
+
+    context "when timeouts persist beyond the retry limit" do
+      before do
+        stub_request(:post, "#{base_uri}/complete_and_pop")
+          .with(headers: headers)
+          .to_raise(Net::ReadTimeout)
+      end
+
+      it "warns four times then re-raises the timeout" do
+        expect(client).to receive(:warn).exactly(4).times
+        expect(client).to receive(:sleep).exactly(4).times
+
+        expect { subject }.to raise_error(Net::ReadTimeout)
+      end
+    end
   end
 
   describe "#seed" do
