@@ -218,15 +218,12 @@ module Specwrk
         end
       end
 
-      class Pop < Base
-        def with_response
-          @examples = pending.shift_bucket
+      class Popable < Base
+        private
 
-          processing_data = @examples.map { |example| [example[:id], example] }.to_h
-          processing.merge!(processing_data)
-
-          if @examples.any?
-            [200, {"content-type" => "application/json"}, [JSON.generate(@examples)]]
+        def with_pop_response
+          if examples.any?
+            [200, {"content-type" => "application/json"}, [JSON.generate(examples)]]
           elsif pending.empty? && processing.empty? && completed.empty?
             [204, {"content-type" => "text/plain"}, ["Waiting for sample to be seeded."]]
           elsif completed.any? && processing.empty?
@@ -235,27 +232,35 @@ module Specwrk
             not_found
           end
         end
+
+        def examples
+          @examples ||= begin
+            examples = pending.shift_bucket
+            completion_threshold = (Time.now + ((pending.run_time_bucket_maximum || 30) * 2)).to_i
+
+            processing_data = examples.map do |example|
+              [example[:id], example.merge(completion_threshold: completion_threshold)]
+            end
+
+            processing.merge!(processing_data.to_h)
+
+            examples
+          end
+        end
       end
 
-      class CompleteAndPop < Base
+      class Pop < Popable
+        def with_response
+          with_pop_response
+        end
+      end
+
+      class CompleteAndPop < Popable
         def with_response
           completed.merge!(completed_examples)
           processing.delete(*completed_examples.keys)
 
-          @examples = pending.shift_bucket
-
-          processing_data = @examples.map { |example| [example[:id], example] }.to_h
-          processing.merge!(processing_data)
-
-          if @examples.any?
-            [200, {"content-type" => "application/json"}, [JSON.generate(@examples)]]
-          elsif pending.empty? && processing.empty? && completed.empty?
-            [204, {"content-type" => "text/plain"}, ["Waiting for sample to be seeded."]]
-          elsif completed.any? && processing.empty?
-            [410, {"content-type" => "text/plain"}, ["That's a good lad. Run along now and go home."]]
-          else
-            not_found
-          end
+          with_pop_response
         end
 
         private
