@@ -218,6 +218,32 @@ RSpec.describe Specwrk::PendingStore do
     end
   end
 end
+RSpec.describe Specwrk::ProcessingStore do
+  let(:uri_string) { "file://#{Dir.tmpdir}" }
+  let(:scope) { SecureRandom.uuid }
+
+  let(:instance) { described_class.new(uri_string, scope) }
+
+  before { instance.clear }
+
+  describe "#expired" do
+    subject { instance.expired }
+
+    before do
+      allow(Time).to receive(:now).and_return(Time.at(1_000_000))
+
+      instance.merge!(
+        "past_item" => {completion_threshold: 500},
+        "exact_now_item" => {completion_threshold: 1_000_000},
+        "future_item" => {completion_threshold: 1_500_000},
+        "no_threshold" => {some_other_key: "foo"}
+      )
+    end
+
+    it { is_expected.to have_key("past_item") }
+    it { is_expected.not_to have_key("no_threshold") }
+  end
+end
 
 RSpec.describe Specwrk::CompletedStore do
   let(:uri_string) { "file://#{Dir.tmpdir}" }

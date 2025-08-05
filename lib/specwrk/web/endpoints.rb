@@ -75,7 +75,7 @@ module Specwrk
         end
 
         def processing
-          @processing ||= Store.new(ENV.fetch("SPECWRK_SRV_STORE_URI", "memory:///"), File.join(run_id, "processing"))
+          @processing ||= ProcessingStore.new(ENV.fetch("SPECWRK_SRV_STORE_URI", "memory:///"), File.join(run_id, "processing"))
         end
 
         def completed
@@ -228,6 +228,12 @@ module Specwrk
             [204, {"content-type" => "text/plain"}, ["Waiting for sample to be seeded."]]
           elsif completed.any? && processing.empty?
             [410, {"content-type" => "text/plain"}, ["That's a good lad. Run along now and go home."]]
+          elsif processing.any? && processing.expired.keys.any?
+            pending.merge!(processing.expired)
+            processing.delete(*processing.expired.keys)
+            @examples = nil
+
+            [200, {"content-type" => "application/json"}, [JSON.generate(examples)]]
           else
             not_found
           end

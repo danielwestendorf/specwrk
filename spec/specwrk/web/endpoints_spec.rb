@@ -172,7 +172,7 @@ RSpec.describe Specwrk::Web::Endpoints do
         it { is_expected.to eq([410, {"content-type" => "text/plain"}, ["That's a good lad. Run along now and go home."]]) }
       end
 
-      context "no items in the pending queue, but something in the processing queue" do
+      context "no items in the pending queue, but something in the processing queue but none are expired" do
         let(:existing_processing_data) do
           {"a.rb:2": {id: "a.rb:2", file_path: "a.rb", expected_run_time: 0.1}}
         end
@@ -243,12 +243,21 @@ RSpec.describe Specwrk::Web::Endpoints do
         it { is_expected.to eq([410, {"content-type" => "text/plain"}, ["That's a good lad. Run along now and go home."]]) }
       end
 
-      context "no items in the pending queue, but something in the processing queue" do
+      context "no items in the pending queue, but something in the processing queue but none are expired" do
         let(:existing_processing_data) do
           {"a.rb:2": {id: "a.rb:2", file_path: "a.rb", expected_run_time: 0.1}}
         end
 
         it { is_expected.to eq([404, {"content-type" => "text/plain"}, ["This is not the path you're looking for, 'ol chap..."]]) }
+      end
+
+      context "no items in the pending queue, but something in the processing queue it is expired" do
+        let(:existing_processing_data) do
+          {"a.rb:2": {id: "a.rb:2", file_path: "a.rb", expected_run_time: 0.1, completion_threshold: (Time.now - 1).to_i}}
+        end
+
+        it { is_expected.to eq([200, {"content-type" => "application/json"}, [JSON.generate([existing_processing_data.values.first])]]) }
+        it { expect { subject }.to change { processing["a.rb:2"][:completion_threshold] } }
       end
     end
   end

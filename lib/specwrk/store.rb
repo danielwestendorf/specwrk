@@ -151,7 +151,7 @@ module Specwrk
       estimated_run_time_total = 0
 
       catch(:full) do
-        keys.each_slice(25).each do |key_group|
+        keys.each_slice(24).each do |key_group|
           examples = multi_read(*key_group)
 
           examples.each do |key, example|
@@ -166,6 +166,25 @@ module Specwrk
 
       delete(*consumed_keys)
       bucket
+    end
+  end
+
+  class ProcessingStore < Store
+    def expired
+      @expired ||= begin
+        bucket = []
+
+        keys.each_slice(24).each do |key_group|
+          examples = multi_read(*key_group)
+          examples.each do |id, example|
+            next if example[:completion_threshold].nil?
+
+            bucket << [id, example] if example[:completion_threshold] < Time.now.to_i
+          end
+        end
+
+        bucket.to_h
+      end
     end
   end
 
