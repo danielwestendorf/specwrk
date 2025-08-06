@@ -16,8 +16,8 @@ module Specwrk
         return 1
       end
 
-      puts "\nFinished in #{total_duration} " \
-                          "(total execution time of #{total_run_time})\n"
+      puts "\nFinished in #{Specwrk.human_readable_duration total_duration} " \
+                          "(total execution time of #{Specwrk.human_readable_duration total_run_time})\n"
 
       client.shutdown
 

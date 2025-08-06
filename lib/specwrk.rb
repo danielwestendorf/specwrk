@@ -38,5 +38,21 @@ module Specwrk
 
       exited_pids
     end
+
+    def human_readable_duration(total_seconds, precision: 2)
+      secs = total_seconds.to_f
+      hours = (secs / 3600).to_i
+      mins = ((secs % 3600) / 60).to_i
+      seconds = secs % 60
+
+      parts = []
+      parts << "#{hours}h" if hours.positive?
+      parts << "#{mins}m" if mins.positive?
+      if seconds.positive?
+        sec_str = format("%0.#{precision}f", seconds).sub(/\.?0+$/, "")
+        parts << "#{sec_str}s"
+      end
+      parts.join(" ")
+    end
   end
 end

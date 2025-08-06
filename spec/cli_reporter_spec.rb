@@ -72,7 +72,7 @@ RSpec.describe Specwrk::CLIReporter do
 
           it "prints finish summary and totals line then returns 1" do
             expect(instance).to receive(:puts)
-              .with("\nFinished in 2.5 (total execution time of 5.0)\n")
+              .with("\nFinished in 2.5s (total execution time of 5s)\n")
             expect(instance).to receive(:puts).with("\e[31m100 examples, 1 failure\e[0m")
             expect(subject).to eq(1)
           end
@@ -83,7 +83,7 @@ RSpec.describe Specwrk::CLIReporter do
 
           it "prints finish summary and totals line then returns 0" do
             expect(instance).to receive(:puts)
-              .with("\nFinished in 2.5 (total execution time of 5.0)\n")
+              .with("\nFinished in 2.5s (total execution time of 5s)\n")
             expect(instance).to receive(:puts)
               .with("\e[33m100 examples, 0 failures, 2 pending\e[0m")
             expect(subject).to eq(0)
@@ -93,7 +93,7 @@ RSpec.describe Specwrk::CLIReporter do
         context "client returns report data with all passed" do
           it "prints finish summary and totals line then returns 0" do
             expect(instance).to receive(:puts)
-              .with("\nFinished in 2.5 (total execution time of 5.0)\n")
+              .with("\nFinished in 2.5s (total execution time of 5s)\n")
             expect(instance).to receive(:puts).with("\e[32m100 examples, 0 failures\e[0m")
             expect(subject).to eq(0)
           end
