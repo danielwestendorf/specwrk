@@ -98,6 +98,7 @@ module Specwrk
 
   class PendingStore < Store
     RUN_TIME_BUCKET_MAXIMUM_KEY = :____run_time_bucket_maximum
+    ORDER_KEY = :____order
 
     def run_time_bucket_maximum=(val)
       @run_time_bucket_maximum = self[RUN_TIME_BUCKET_MAXIMUM_KEY] = val
@@ -105,6 +106,41 @@ module Specwrk
 
     def run_time_bucket_maximum
       @run_time_bucket_maximum ||= self[RUN_TIME_BUCKET_MAXIMUM_KEY]
+    end
+
+    def order=(val)
+      @order = nil
+
+      self[ORDER_KEY] = if val.nil? || val.length.zero?
+        nil
+      else
+        val
+      end
+    end
+
+    def order
+      @order ||= self[ORDER_KEY] || []
+    end
+
+    def keys
+      return super if order.length.zero?
+
+      order
+    end
+
+    def merge!(hash)
+      super
+      self.order = hash.keys
+    end
+
+    def clear
+      @order = nil
+      super
+    end
+
+    def reload
+      @order = nil
+      super
     end
 
     def shift_bucket
@@ -146,6 +182,7 @@ module Specwrk
       end
 
       delete(*consumed_keys)
+      self.order = order - consumed_keys
       bucket
     end
 
@@ -171,6 +208,7 @@ module Specwrk
       end
 
       delete(*consumed_keys)
+      self.order = order - consumed_keys
       bucket
     end
   end

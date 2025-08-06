@@ -70,7 +70,7 @@ RSpec.describe Specwrk::Store do
 
     before { instance.merge!("foo" => 1, "baz" => 2) }
 
-    it { expect { subject }.to change(instance, :keys).from(["foo", "baz"]).to([]) }
+    it { expect { subject }.to change(instance, :keys).from(match_array(["foo", "baz"])).to([]) }
   end
 
   describe "#inspect" do
@@ -104,6 +104,38 @@ RSpec.describe Specwrk::PendingStore do
     before { instance[described_class::RUN_TIME_BUCKET_MAXIMUM_KEY] = 4 }
 
     it { is_expected.to eq(4) }
+  end
+
+  describe "#order=" do
+    subject { instance.order = value }
+
+    context "sets order array" do
+      let(:value) { [1, 2] }
+
+      it { expect { subject }.to change(instance, :order).from([]).to([1, 2]) }
+    end
+
+    context "order set to empty array nils the stored value" do
+      let(:value) { [] }
+
+      before { instance[described_class::ORDER_KEY] = [2, 1] }
+
+      it { expect { subject }.to change { instance[described_class::ORDER_KEY] }.from([2, 1]).to(nil) }
+    end
+  end
+
+  describe "#order" do
+    subject { instance.order }
+
+    context "order not set" do
+      it { is_expected.to eq([]) }
+    end
+
+    context "order set" do
+      before { instance[described_class::ORDER_KEY] = [1, 2] }
+
+      it { is_expected.to eq([1, 2]) }
+    end
   end
 
   describe "#merge!" do

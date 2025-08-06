@@ -12,9 +12,7 @@ RSpec.describe Specwrk::Store::FileAdapter do
   let(:instance) { described_class.new(uri, scope) }
 
   def write(key, value)
-    @counter ||= -1
-    @counter += 1
-    filename = "#{"%012d" % @counter}_#{encode_key key}#{Specwrk::Store::FileAdapter::EXT}"
+    filename = "#{encode_key key}#{Specwrk::Store::FileAdapter::EXT}"
     File.write(File.join(path, filename), JSON.generate(value))
   end
 
@@ -23,7 +21,7 @@ RSpec.describe Specwrk::Store::FileAdapter do
   end
 
   def current_filenames
-    Dir.glob(File.join(path, "*#{Specwrk::Store::FileAdapter::EXT}"))
+    Dir.glob(File.join(path, "*#{Specwrk::Store::FileAdapter::EXT}")).map { |fname| File.basename(fname) }
   end
 
   describe ".schedule_work" do
@@ -88,11 +86,11 @@ RSpec.describe Specwrk::Store::FileAdapter do
   describe "#keys" do
     subject { instance.keys }
 
-    let(:ordered_keys) { ("a".."z").to_a.shuffle }
+    let(:keys) { ("a".."z").to_a.shuffle }
 
-    before { ordered_keys.each.with_index { |k, i| write(k, i) } }
+    before { keys.each.with_index { |k, i| write(k, i) } }
 
-    it { is_expected.to eq(ordered_keys) }
+    it { is_expected.to match_array(keys) }
   end
 
   describe "#clear" do
@@ -120,8 +118,7 @@ RSpec.describe Specwrk::Store::FileAdapter do
   describe "#merge! and #multi_write" do
     subject { instance.merge!(b: 1, a: 2) }
 
-    it { expect { subject }.to change { current_filenames.first&.split("_")&.last }.from(nil).to("#{encode_key("b")}#{Specwrk::Store::FileAdapter::EXT}") }
-    it { expect { subject }.to change { current_filenames.last&.split("_")&.last }.from(nil).to("#{encode_key("a")}#{Specwrk::Store::FileAdapter::EXT}") }
+    it { expect { subject }.to change { current_filenames }.from([]).to(match_array(["#{encode_key("a")}#{Specwrk::Store::FileAdapter::EXT}", "#{encode_key("b")}#{Specwrk::Store::FileAdapter::EXT}"])) }
   end
 
   describe "#multi_read" do

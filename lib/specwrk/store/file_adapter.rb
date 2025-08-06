@@ -60,7 +60,6 @@ module Specwrk
         else
           filename = filename_for_key(key_string)
           write(filename, JSON.generate(value))
-          known_key_pairs[key_string] = filename
         end
       end
 
@@ -71,16 +70,12 @@ module Specwrk
       def clear
         FileUtils.rm_rf(path)
         FileUtils.mkdir_p(path)
-
-        @known_key_pairs = nil
       end
 
       def delete(*keys)
-        filenames = keys.map { |key| known_key_pairs[key] }.compact
+        filenames = keys.map { |key| filename_for_key key }.compact
 
         FileUtils.rm_f(filenames)
-
-        keys.each { |key| known_key_pairs.delete(key) }
       end
 
       def merge!(h2)
@@ -88,8 +83,6 @@ module Specwrk
       end
 
       def multi_read(*read_keys)
-        known_key_pairs # precache before each thread tries to look them up
-
         result_queue = Queue.new
 
         read_keys.each do |key|
@@ -112,8 +105,6 @@ module Specwrk
       end
 
       def multi_write(hash)
-        known_key_pairs # precache before each thread tries to look them up
-
         result_queue = Queue.new
 
         hash_with_filenames = hash.map { |key, value| [key.to_s, [filename_for_key(key.to_s), value]] }.to_h
@@ -126,7 +117,6 @@ module Specwrk
         end
 
         Thread.pass until result_queue.length == hash.length
-        hash_with_filenames.each { |key, (filename, _value)| known_key_pairs[key] = filename }
       end
 
       def empty?
@@ -145,27 +135,17 @@ module Specwrk
       end
 
       def read(key)
-        File.read(known_key_pairs[key]) if known_key_pairs.key? key
+        filename = filename_for_key key
+        File.read(filename)
+      rescue Errno::ENOENT
+        nil
       end
 
       def filename_for_key(key)
         File.join(
           path,
-          [
-            counter_prefix(key),
-            encode_key(key)
-          ].join("_")
+          encode_key(key)
         ) + EXT
-      end
-
-      def counter_prefix(key)
-        count = keys.index(key) || counter.tap { @counter += 1 }
-
-        "%012d" % count
-      end
-
-      def counter
-        @counter ||= keys.length
       end
 
       def path
@@ -179,14 +159,14 @@ module Specwrk
       end
 
       def decode_key(key)
-        encoded_key_part = File.basename(key).delete_suffix(EXT).split(/\A\d+_/).last
+        encoded_key_part = File.basename(key).delete_suffix(EXT)
         padding_count = (4 - encoded_key_part.length % 4) % 4
 
         Base64.urlsafe_decode64(encoded_key_part + ("=" * padding_count))
       end
 
       def known_key_pairs
-        @known_key_pairs ||= Dir.entries(path).sort.map do |filename|
+        Dir.entries(path).sort.map do |filename|
           next if filename.start_with? "."
           next unless filename.end_with? EXT
 
