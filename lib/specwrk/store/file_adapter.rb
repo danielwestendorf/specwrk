@@ -126,7 +126,7 @@ module Specwrk
       private
 
       def write(filename, content)
-        tmp_filename = [filename, "tmp"].join(".")
+        tmp_filename = [filename, SecureRandom.uuid, "tmp"].join(".")
 
         File.binwrite(tmp_filename, content)
 
