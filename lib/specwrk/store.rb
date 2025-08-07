@@ -99,6 +99,7 @@ module Specwrk
   class PendingStore < Store
     RUN_TIME_BUCKET_MAXIMUM_KEY = :____run_time_bucket_maximum
     ORDER_KEY = :____order
+    MAX_RETRIES_KEY = :____max_retries
 
     def run_time_bucket_maximum=(val)
       @run_time_bucket_maximum = self[RUN_TIME_BUCKET_MAXIMUM_KEY] = val
@@ -122,6 +123,14 @@ module Specwrk
       @order ||= self[ORDER_KEY] || []
     end
 
+    def max_retries=(val)
+      @max_retries = self[MAX_RETRIES_KEY] = val
+    end
+
+    def max_retries
+      @max_retries ||= self[MAX_RETRIES_KEY] || 0
+    end
+
     def keys
       return super if order.length.zero?
 
@@ -140,6 +149,7 @@ module Specwrk
 
     def reload
       @order = nil
+      @max_retries = nil
       super
     end
 

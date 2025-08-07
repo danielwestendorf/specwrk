@@ -325,10 +325,11 @@ RSpec.describe Specwrk::Client do
   end
 
   describe "#seed" do
-    subject { client.seed(payload) }
+    subject { client.seed(examples, max_retries) }
 
     let(:client) { described_class.new }
-    let(:payload) { [{id: 1}] }
+    let(:examples) { [{id: 1}] }
+    let(:max_retries) { 5 }
 
     context "when response is 200" do
       before do

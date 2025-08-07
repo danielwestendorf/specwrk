@@ -138,6 +138,20 @@ RSpec.describe Specwrk::PendingStore do
     end
   end
 
+  describe "#max_retries=" do
+    subject { instance.max_retries = 3 }
+
+    it { expect { subject }.to change(instance, :max_retries).from(0).to(3) }
+  end
+
+  describe "#max_retries" do
+    subject { instance.max_retries }
+
+    before { instance[described_class::MAX_RETRIES_KEY] = 4 }
+
+    it { is_expected.to eq(4) }
+  end
+
   describe "#merge!" do
     subject { instance.merge!(:alpha => 1, "beta" => 2) }
 

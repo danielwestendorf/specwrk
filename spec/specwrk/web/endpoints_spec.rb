@@ -84,16 +84,17 @@ RSpec.describe Specwrk::Web::Endpoints do
 
     describe Specwrk::Web::Endpoints::Seed do
       let(:request_method) { "POST" }
-      let(:body) { JSON.generate(examples: [{id: "a.rb:1", file_path: "a.rb", run_time: 0.1}]) }
+      let(:body) { JSON.generate(max_retries: 42, examples: [{id: "a.rb:1", file_path: "a.rb", run_time: 0.1}]) }
 
-      context "pending store reset with examples" do
+      context "pending store reset with examples and meta data" do
         let(:existing_pending_data) { {"b.rb:2" => {id: "b.rb:2", file_path: "b.rb", expected_run_time: 0.1}} }
 
         it { is_expected.to eq(ok) }
         it { expect { subject }.to change(pending, :inspect).from("b.rb:2": instance_of(Hash)).to("a.rb:1": instance_of(Hash)) }
+        it { expect { subject }.to change { pending.reload.max_retries }.from(0).to(42) }
       end
 
-      context "merged with expected_run_time sorted by file" do
+      context "merged with  sorted by file" do
         let(:body) do
           JSON.generate(examples: [
             {id: "a.rb:1", file_path: "a.rb"},
@@ -105,7 +106,7 @@ RSpec.describe Specwrk::Web::Endpoints do
         it { expect { subject }.to change { pending.reload.keys }.from([]).to(%w[a.rb:1 a.rb:2 b.rb:1]) }
       end
 
-      context "merged with expected_run_time sorted by timings" do
+      context "merged with run_time_bucket_maximum sorted by timings" do
         let(:existing_run_times_data) do
           {
             "a.rb:1": 0.2,

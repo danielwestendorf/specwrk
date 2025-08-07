@@ -142,6 +142,8 @@ module Specwrk
         def with_response
           pending.clear
 
+          pending.max_retries = payload.fetch(:max_retries, 0)
+
           new_run_time_bucket_maximums = [pending.run_time_bucket_maximum, @seeds_run_time_bucket_maximum.to_f].compact
           pending.run_time_bucket_maximum = new_run_time_bucket_maximums.sum.to_f / new_run_time_bucket_maximums.length.to_f
 

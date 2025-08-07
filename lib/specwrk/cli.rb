@@ -104,10 +104,10 @@ module Specwrk
       include Clientable
 
       desc "Seed the server with a list of specs for the run"
-
+      option :max_retries, default: 0, desc: "Number of times an example will be re-run should it fail"
       argument :dir, required: false, default: "spec", desc: "Relative spec directory to run against"
 
-      def call(dir:, **args)
+      def call(max_retries:, dir:, **args)
         self.class.setup(**args)
 
         require "specwrk/list_examples"
@@ -117,7 +117,7 @@ module Specwrk
         examples = ListExamples.new(dir).examples
 
         Client.wait_for_server!
-        Client.new.seed(examples)
+        Client.new.seed(examples, max_retries: max_retries)
         file_count = examples.group_by { |e| e[:file_path] }.keys.size
         puts "🌱 Seeded #{examples.size} examples across #{file_count} files"
       rescue Errno::ECONNREFUSED
@@ -180,9 +180,10 @@ module Specwrk
       include Servable
 
       desc "Start a server and workers, monitor until complete"
+      option :max_retries, default: 0, desc: "Number of times an example will be re-run should it fail"
       argument :dir, required: false, default: "spec", desc: "Relative spec directory to run against"
 
-      def call(dir:, **args)
+      def call(max_retries:, dir:, **args)
         self.class.setup(**args)
         $stdout.sync = true
 
@@ -211,7 +212,7 @@ module Specwrk
           Client.wait_for_server!
           status "Server responding ✓"
           status "Seeding #{examples.length} examples..."
-          Client.new.seed(examples)
+          Client.new.seed(examples, max_retries)
           file_count = examples.group_by { |e| e[:file_path] }.keys.size
           status "🌱 Seeded #{examples.size} examples across #{file_count} files"
         end
