@@ -35,6 +35,13 @@ RSpec.describe Specwrk::Worker do
       .with("bar")
   end
 
+  around do |ex|
+    final_output_reference = $final_output
+    $final_output = nil
+    ex.run
+    $final_output = final_output_reference
+  end
+
   describe ".run!" do
     subject { described_class.run! }
 

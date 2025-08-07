@@ -54,7 +54,7 @@ module Specwrk
         end
       end
 
-      executor.final_output.tap(&:rewind).each_line { |line| $stdout.write line }
+      executor.final_output.tap(&:rewind).each_line { |line| final_output.write line }
 
       @heartbeat_thread.kill
       client.close
@@ -108,6 +108,10 @@ module Specwrk
     private
 
     attr_reader :running, :client, :executor
+
+    def final_output
+      $final_output || $stdout
+    end
 
     def status
       return 0 if @all_examples_completed && client.worker_status.zero?

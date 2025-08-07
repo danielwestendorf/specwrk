@@ -49,16 +49,31 @@ module Specwrk
       end
 
       def start_workers
+        @final_outputs = []
         @worker_pids = worker_count.times.map do |i|
+          reader, writer = IO.pipe
+          @final_outputs << reader
+
           Process.fork do
             ENV["TEST_ENV_NUMBER"] = ENV["SPECWRK_FORKED"] = (i + 1).to_s
             ENV["SPECWRK_ID"] = ENV["SPECWRK_ID"] + "-#{i + 1}"
 
+            $final_output = writer
+            $final_output.sync = true
+            reader.close
+
             require "specwrk/worker"
 
             status = Specwrk::Worker.run!
+            $final_output.close
             exit(status)
-          end
+          end.tap { writer.close }
+        end
+      end
+
+      def drain_outputs
+        @final_outputs.each do |reader|
+          reader.each_line { |line| $stdout.print line }
         end
       end
 
@@ -140,6 +155,7 @@ module Specwrk
 
         start_workers
         wait_for_workers_exit
+        drain_outputs
 
         require "specwrk/cli_reporter"
         Specwrk::CLIReporter.new.report
@@ -205,6 +221,7 @@ module Specwrk
           require "specwrk/list_examples"
           require "specwrk/client"
 
+          ENV["SPECWRK_FORKED"] = "1"
           ENV["SPECWRK_SEED"] = "1"
           examples = ListExamples.new(dir).examples
 
@@ -229,6 +246,7 @@ module Specwrk
         status "#{worker_count} workers started ✓\n"
         Specwrk.wait_for_pids_exit(@worker_pids)
 
+        drain_outputs
         return if Specwrk.force_quit
 
         require "specwrk/cli_reporter"
