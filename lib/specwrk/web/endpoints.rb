@@ -141,6 +141,7 @@ module Specwrk
 
         def with_response
           pending.clear
+
           new_run_time_bucket_maximums = [pending.run_time_bucket_maximum, @seeds_run_time_bucket_maximum.to_f].compact
           pending.run_time_bucket_maximum = new_run_time_bucket_maximums.sum.to_f / new_run_time_bucket_maximums.length.to_f
 
@@ -154,10 +155,10 @@ module Specwrk
         def examples_with_run_times
           @examples_with_run_times ||= begin
             unsorted_examples_with_run_times = []
-            all_ids = payload.map { |example| example[:id] }
+            all_ids = payload[:examples].map { |example| example[:id] }
             all_run_times = run_times.multi_read(*all_ids)
 
-            payload.each do |example|
+            payload[:examples].each do |example|
               run_time = all_run_times[example[:id]]
 
               unsorted_examples_with_run_times << [example[:id], example.merge(expected_run_time: run_time)]

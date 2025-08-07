@@ -84,7 +84,7 @@ RSpec.describe Specwrk::Web::Endpoints do
 
     describe Specwrk::Web::Endpoints::Seed do
       let(:request_method) { "POST" }
-      let(:body) { JSON.generate([{id: "a.rb:1", file_path: "a.rb", run_time: 0.1}]) }
+      let(:body) { JSON.generate(examples: [{id: "a.rb:1", file_path: "a.rb", run_time: 0.1}]) }
 
       context "pending store reset with examples" do
         let(:existing_pending_data) { {"b.rb:2" => {id: "b.rb:2", file_path: "b.rb", expected_run_time: 0.1}} }
@@ -95,7 +95,7 @@ RSpec.describe Specwrk::Web::Endpoints do
 
       context "merged with expected_run_time sorted by file" do
         let(:body) do
-          JSON.generate([
+          JSON.generate(examples: [
             {id: "a.rb:1", file_path: "a.rb"},
             {id: "b.rb:1", file_path: "b.rb"},
             {id: "a.rb:2", file_path: "a.rb"}
@@ -115,7 +115,7 @@ RSpec.describe Specwrk::Web::Endpoints do
         end
 
         let(:body) do
-          JSON.generate([
+          JSON.generate(examples: [
             {id: "a.rb:1", file_path: "a.rb"},
             {id: "a.rb:2", file_path: "a.rb"},
             {id: "b.rb:3", file_path: "b.rb"},
