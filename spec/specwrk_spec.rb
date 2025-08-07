@@ -36,4 +36,26 @@ RSpec.describe Specwrk do
       it { is_expected.to eq(pid1 => 1, pid2 => 42) }
     end
   end
+
+  if ENV["SPECWRK_SRV_URI"].nil? && ENV["SPECWRK_FORKED"]
+    describe "a test that only passes on the second retry on the same instance (assume max retries > 0)" do
+      it "should succeed on the 2nd run" do
+        file = File.join(Dir.tmpdir, "specwrk.retry")
+
+        count = if File.exist?(file)
+          JSON.parse(File.read(file))
+        else
+          0
+        end
+
+        File.write(file, JSON.generate(count + 1))
+        if count.zero?
+          expect(true).to eq(false)
+        else
+          expect(true).to eq(true)
+          FileUtils.rm_rf(file)
+        end
+      end
+    end
+  end
 end

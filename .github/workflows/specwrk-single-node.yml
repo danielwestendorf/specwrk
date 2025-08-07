@@ -37,5 +37,6 @@ jobs:
 
       ## SPECWRK STEP ##
       - name: Run tests via specwrk start
-        run: bundle exec specwrk start --count 2 spec/
+        # This run will output a single failure when healthy, but because of retries the exit code will be zero
+        run: bundle exec specwrk start --count 2 --retries 1 spec/
       ## /SPECWRK STEP ##
