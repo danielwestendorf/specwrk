@@ -1,5 +1,5 @@
 # Specwrk
-Run your [RSpec](https://github.com/rspec/rspec) examples across many processors and many nodes for a single build. Or just many processes on a single node. Speeds up your *slow* (minutes/hours not seconds) test suite by running multiple examples in parallel.
+Run your [RSpec](https://github.com/rspec/rspec) examples across many processors and many nodes for a single build. Or just many processes on a single node. Speeds up your *slow* (minutes/hours not seconds) test suite by running multiple examples in parallel. Optionally, retry failed examples up-to N-times to avoid breaking deployments.
 
 One CLI command to:
 
@@ -60,6 +60,7 @@ Options:
   --store-uri=VALUE                 # Directory where server state is stored. Required for multi-node or multi-process servers.
   --group-by=VALUE                  # How examples will be grouped for workers; fallback to file if no timings are found. Overrides SPECWERK_SRV_GROUP_BY: (file/timings), default: "timings"
   --[no-]verbose                    # Run in verbose mode, default: false
+  --max-retries=VALUE               # Number of times an example will be re-run should it fail, default: 0
   --help, -h                        # Print this help
 ```
 
@@ -111,6 +112,7 @@ Options:
   --key=VALUE, -k VALUE             # Authentication key clients must use for access. Overrides SPECWRK_SRV_KEY, default: ""
   --run=VALUE, -r VALUE             # The run identifier for this job execution. Overrides SPECWRK_RUN, default: "main"
   --timeout=VALUE, -t VALUE         # The amount of time to wait for the server to respond. Overrides SPECWRK_TIMEOUT, default: "5"
+  --max-retries=VALUE               # Number of times an example will be re-run should it fail, default: 0
   --help, -h                        # Print this help
 ```
 
