@@ -5,19 +5,14 @@ module Specwrk
     class CompletionFormatter
       RSpec::Core::Formatters.register self, :stop
 
-      attr_reader :examples, :failure
+      attr_reader :examples
 
       def initialize
         @examples = []
-        @failure = false
       end
 
       def stop(group_notification)
         group_notification.notifications.map do |notification|
-          unless failure
-            @failure = notification.example.execution_result.status == :failed
-          end
-
           examples << {
             id: notification.example.id,
             full_description: notification.example.full_description,

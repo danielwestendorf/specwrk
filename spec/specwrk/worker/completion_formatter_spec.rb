@@ -38,16 +38,6 @@ RSpec.describe Specwrk::Worker::CompletionFormatter do
       end
 
       it { expect { subject }.to change(instance.examples, :length).from(0).to(2) }
-      it { expect { subject }.not_to change(instance, :failure) }
-    end
-
-    context "a example failed" do
-      let(:notifications) do
-        [notification_factory(:failed), notification_factory(:passed)]
-      end
-
-      it { expect { subject }.to change(instance.examples, :length).from(0).to(2) }
-      it { expect { subject }.to change(instance, :failure).from(false).to(true) }
     end
   end
 end

@@ -8,14 +8,12 @@ RSpec.describe Specwrk::Worker do
   let(:thread) { instance_double(Thread, kill: true) }
 
   let(:instance) { described_class.new }
-  let(:failure) { false }
   let(:example_processed) { true }
 
   let(:executor) do
     instance_double Specwrk::Worker::Executor,
       final_output: tempfile,
       examples: %w[a.rb:1 b.rb:2],
-      failure: failure,
       example_processed: example_processed
   end
 

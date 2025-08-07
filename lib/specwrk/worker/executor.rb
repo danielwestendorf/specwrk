@@ -13,10 +13,6 @@ module Specwrk
     class Executor
       attr_reader :example_processed
 
-      def failure
-        completion_formatter.failure
-      end
-
       def examples
         completion_formatter.examples
       end

@@ -111,7 +111,6 @@ module Specwrk
 
     def status
       return 1 if !executor.example_processed && !@all_examples_completed
-      return 1 if executor.failure
       return 1 if Specwrk.force_quit
 
       0
