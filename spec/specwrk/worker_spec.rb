@@ -8,13 +8,11 @@ RSpec.describe Specwrk::Worker do
   let(:thread) { instance_double(Thread, kill: true) }
 
   let(:instance) { described_class.new }
-  let(:example_processed) { true }
 
   let(:executor) do
     instance_double Specwrk::Worker::Executor,
       final_output: tempfile,
-      examples: %w[a.rb:1 b.rb:2],
-      example_processed: example_processed
+      examples: %w[a.rb:1 b.rb:2]
   end
 
   before do
@@ -75,8 +73,6 @@ RSpec.describe Specwrk::Worker do
     end
 
     context "no examples processed" do
-      let(:example_processed) { nil }
-
       before { allow(Specwrk::Client).to receive(:wait_for_server!) }
 
       it "returns 0 when no examples were processed, but server signals all examples completed" do
@@ -108,7 +104,7 @@ RSpec.describe Specwrk::Worker do
       it "breaks the loop" do
         count = 0
         expect(instance).to receive(:execute).exactly(4).times
-        expect(Specwrk).to receive(:force_quit).exactly(6).times do
+        expect(Specwrk).to receive(:force_quit).exactly(5).times do
           count += 1
           count >= 5
         end
@@ -145,8 +141,6 @@ RSpec.describe Specwrk::Worker do
     end
 
     context "calls run_examples when WaitingForSeedError" do
-      let(:example_processed) { nil }
-
       before { allow(Specwrk::Client).to receive(:wait_for_server!) }
 
       it "waits up to 10s before exiting" do

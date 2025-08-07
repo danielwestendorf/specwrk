@@ -40,7 +40,6 @@ RSpec.describe Specwrk::Worker::Executor do
         .and_return("🇺🇸!Big Success!🇺🇸")
 
       expect(instance.run(examples)).to eq("🇺🇸!Big Success!🇺🇸")
-      expect(instance.example_processed).to eq(true)
     end
   end
 

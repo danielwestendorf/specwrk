@@ -110,7 +110,7 @@ module Specwrk
     attr_reader :running, :client, :executor
 
     def status
-      return 1 if !executor.example_processed && !@all_examples_completed
+      return 1 if !@all_examples_completed
       return 1 if Specwrk.force_quit
 
       0

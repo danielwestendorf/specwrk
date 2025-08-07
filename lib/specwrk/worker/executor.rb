@@ -11,8 +11,6 @@ require "specwrk/worker/null_formatter"
 module Specwrk
   class Worker
     class Executor
-      attr_reader :example_processed
-
       def examples
         completion_formatter.examples
       end
@@ -25,7 +23,6 @@ module Specwrk
         reset!
 
         example_ids = examples.map { |example| example[:id] }
-        @example_processed ||= true unless example_ids.size.zero? # only ever toggle from nil => true
 
         options = RSpec::Core::ConfigurationOptions.new rspec_options + example_ids
         RSpec::Core::Runner.new(options).run($stderr, $stdout)
