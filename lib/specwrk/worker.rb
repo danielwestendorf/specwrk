@@ -110,10 +110,10 @@ module Specwrk
     attr_reader :running, :client, :executor
 
     def status
-      return 1 if !@all_examples_completed
+      return 0 if @all_examples_completed && client.worker_status.zero?
       return 1 if Specwrk.force_quit
 
-      0
+      client.worker_status
     end
 
     def warn(msg)

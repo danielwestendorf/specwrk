@@ -76,13 +76,15 @@ RSpec.describe Specwrk::Worker do
       before { allow(Specwrk::Client).to receive(:wait_for_server!) }
 
       it "returns 0 when no examples were processed, but server signals all examples completed" do
+        expect(client).to receive(:worker_status)
+          .and_return(0)
         expect(instance).to receive(:execute)
           .and_raise(Specwrk::CompletedAllExamplesError)
 
         expect(subject).to eq(0)
       end
 
-      it "returns 1 when no examples were processed, but server did not signal all examples completed" do
+      it "returns client's worker_status when no examples were processed, but server did not signal all examples completed" do
         expect(instance).to receive(:sleep)
           .with(1)
           .exactly(10).times
@@ -94,7 +96,10 @@ RSpec.describe Specwrk::Worker do
           .and_raise(Specwrk::WaitingForSeedError)
           .exactly(11).times
 
-        expect(subject).to eq(1)
+        expect(client).to receive(:worker_status)
+          .and_return(42)
+
+        expect(subject).to eq(42)
       end
     end
 
@@ -104,7 +109,7 @@ RSpec.describe Specwrk::Worker do
       it "breaks the loop" do
         count = 0
         expect(instance).to receive(:execute).exactly(4).times
-        expect(Specwrk).to receive(:force_quit).exactly(5).times do
+        expect(Specwrk).to receive(:force_quit).exactly(6).times do
           count += 1
           count >= 5
         end
@@ -122,6 +127,9 @@ RSpec.describe Specwrk::Worker do
       before { allow(Specwrk::Client).to receive(:wait_for_server!) }
 
       it "breaks the loop and returns 0" do
+        expect(client).to receive(:worker_status)
+          .and_return(0)
+
         count = 1
         expect(instance).to receive(:execute).exactly(5).times do
           if count == 5
@@ -159,7 +167,10 @@ RSpec.describe Specwrk::Worker do
         expect(instance).to receive(:warn)
           .with("No examples seeded, giving up!")
 
-        expect(subject).to eq(1)
+        expect(client).to receive(:worker_status)
+          .and_return(42)
+
+        expect(subject).to eq(42)
       end
     end
 
@@ -167,6 +178,9 @@ RSpec.describe Specwrk::Worker do
       before { allow(Specwrk::Client).to receive(:wait_for_server!) }
 
       it "sleeps but doesn't break loop" do
+        expect(client).to receive(:worker_status)
+          .and_return(0)
+
         completed = false
         expect(instance).to receive(:sleep)
           .with(0.5)

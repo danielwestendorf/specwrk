@@ -143,12 +143,12 @@ RSpec.describe Specwrk::Web::Endpoints do
         it { is_expected.to eq([204, {"content-type" => "text/plain", "x-specwrk-status" => "1"}, ["Waiting for sample to be seeded."]]) }
       end
 
-      context "no items in the processing queue, but completed queue has items" do
+      context "no items in the processing queue, no known failed for worker, but completed queue has items" do
         let(:existing_completed_data) do
           {"a.rb:2": {id: "a.rb:2", file_path: "a.rb", expected_run_time: 0.1}}
         end
 
-        it { is_expected.to eq([410, {"content-type" => "text/plain", "x-specwrk-status" => "1"}, ["That's a good lad. Run along now and go home."]]) }
+        it { is_expected.to eq([410, {"content-type" => "text/plain", "x-specwrk-status" => "0"}, ["That's a good lad. Run along now and go home."]]) }
       end
 
       context "no items in the pending queue, but something in the processing queue but none are expired" do

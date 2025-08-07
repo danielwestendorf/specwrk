@@ -33,7 +33,7 @@ module Specwrk
 
           after_lock
 
-          final_response[1]["x-specwrk-status"] = (worker[:failed] || 1).to_s
+          final_response[1]["x-specwrk-status"] = worker_status.to_s
 
           final_response
         end
@@ -102,6 +102,12 @@ module Specwrk
 
         def worker
           @worker ||= Store.new(ENV.fetch("SPECWRK_SRV_STORE_URI", "memory:///"), File.join(run_id, "workers", request.get_header("HTTP_X_SPECWRK_ID").to_s))
+        end
+
+        def worker_status
+          return 0 if worker[:failed].nil? && completed.any? # worker starts after run has completed
+
+          worker[:failed] || 1
         end
 
         def run_id
