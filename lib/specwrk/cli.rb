@@ -58,14 +58,14 @@ module Specwrk
             ENV["TEST_ENV_NUMBER"] = ENV["SPECWRK_FORKED"] = (i + 1).to_s
             ENV["SPECWRK_ID"] = ENV["SPECWRK_ID"] + "-#{i + 1}"
 
-            $final_output = writer
-            $final_output.sync = true
+            $final_output = writer # standard:disable Style/GlobalVars
+            $final_output.sync = true # standard:disable Style/GlobalVars
             reader.close
 
             require "specwrk/worker"
 
             status = Specwrk::Worker.run!
-            $final_output.close
+            $final_output.close # standard:disable Style/GlobalVars
             exit(status)
           end.tap { writer.close }
         end

@@ -110,7 +110,7 @@ module Specwrk
     attr_reader :running, :client, :executor
 
     def final_output
-      $final_output || $stdout
+      $final_output || $stdout # standard:disable Style/GlobalVars
     end
 
     def status

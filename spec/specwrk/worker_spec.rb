@@ -36,10 +36,10 @@ RSpec.describe Specwrk::Worker do
   end
 
   around do |ex|
-    final_output_reference = $final_output
-    $final_output = nil
+    final_output_reference = $final_output # standard:disable Style/GlobalVars
+    $final_output = nil # standard:disable Style/GlobalVars
     ex.run
-    $final_output = final_output_reference
+    $final_output = final_output_reference # standard:disable Style/GlobalVars
   end
 
   describe ".run!" do
