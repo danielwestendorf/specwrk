@@ -92,6 +92,10 @@ module Specwrk
           @completed ||= CompletedStore.new(ENV.fetch("SPECWRK_SRV_STORE_URI", "memory:///"), File.join(run_id, "completed"))
         end
 
+        def failure_counts
+          @failure_counts ||= Store.new(ENV.fetch("SPECWRK_SRV_STORE_URI", "memory:///"), File.join(run_id, "failure_counts"))
+        end
+
         def metadata
           @metadata ||= Store.new(ENV.fetch("SPECWRK_SRV_STORE_URI", "memory:///"), File.join(run_id, "metadata"))
         end
@@ -141,6 +145,7 @@ module Specwrk
 
         def with_response
           pending.clear
+          failure_counts.clear
 
           pending.max_retries = payload.fetch(:max_retries, 0)
 
@@ -253,15 +258,52 @@ module Specwrk
 
         def with_response
           completed.merge!(completed_examples)
-          processing.delete(*completed_examples.keys)
+          processing.delete(*(completed_examples.keys + retry_examples.keys))
+          pending.merge!(retry_examples)
+          failure_counts.merge!(retry_examples_new_failure_counts)
 
           with_pop_response
         end
 
         private
 
+        def all_examples
+          @all_examples ||= payload.map { |example| [example[:id], example] if processing[example[:id]] }.compact.to_h
+        end
+
         def completed_examples
-          @completed_data ||= payload.map { |example| [example[:id], example] if processing[example[:id]] }.compact.to_h
+          @completed_examples ||= all_examples.map do |id, example|
+            next if retry_example?(example)
+
+            [id, example]
+          end.compact.to_h
+        end
+
+        def retry_examples
+          @retry_examples ||= all_examples.map do |id, example|
+            next unless retry_example?(example)
+
+            [id, example]
+          end.compact.to_h
+        end
+
+        def retry_examples_new_failure_counts
+          @retry_examples_new_failure_counts ||= retry_examples.map do |id, _example|
+            [id, all_example_failure_counts.fetch(id, 0) + 1]
+          end.to_h
+        end
+
+        def retry_example?(example)
+          return false unless example[:status] == "failed"
+          return false unless pending.max_retries.positive?
+
+          example_failure_count = all_example_failure_counts.fetch(example[:id], 0)
+
+          example_failure_count < pending.max_retries
+        end
+
+        def all_example_failure_counts
+          @all_example_failure_counts ||= failure_counts.multi_read(*all_examples.keys)
         end
 
         def completed_examples_status_counts

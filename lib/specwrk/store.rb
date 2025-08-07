@@ -139,7 +139,8 @@ module Specwrk
 
     def merge!(hash)
       super
-      self.order = hash.keys
+
+      self.order = order + (hash.keys - order)
     end
 
     def clear

@@ -153,11 +153,15 @@ RSpec.describe Specwrk::PendingStore do
   end
 
   describe "#merge!" do
-    subject { instance.merge!(:alpha => 1, "beta" => 2) }
+    subject { instance.merge!(:gamma => 3, :alpha => 1, "beta" => 2) }
 
-    before { instance["alpha"] = 0 }
+    before do
+      instance["alpha"] = 0
+      instance.order = ["alpha", "nonexistant"]
+    end
 
-    it { expect { subject }.to change(instance, :inspect).from(alpha: 0).to(alpha: 1, beta: 2) }
+    it { expect { subject }.to change(instance, :inspect).from(alpha: 0).to(alpha: 1, beta: 2, gamma: 3) }
+    it { expect { subject }.to change(instance, :order).from(%w[alpha nonexistant]).to(%w[alpha nonexistant gamma beta]) }
   end
 
   describe "#shift_bucket" do
