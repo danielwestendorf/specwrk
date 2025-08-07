@@ -218,33 +218,6 @@ RSpec.describe Specwrk::Client do
     end
   end
 
-  describe "#complete_examples" do
-    subject { client.complete_examples(payload) }
-
-    let(:client) { described_class.new }
-    let(:payload) { [{id: 1}] }
-
-    context "when response is 200" do
-      before do
-        stub_request(:post, "#{base_uri}/complete")
-          .with(headers: headers)
-          .to_return(status: 200)
-      end
-
-      it { is_expected.to be true }
-    end
-
-    context "when response is error" do
-      before do
-        stub_request(:post, "#{base_uri}/complete").to_return(status: 500, body: "boom")
-      end
-
-      it "raises an UnhandledResponseError" do
-        expect { subject }.to raise_error(Specwrk::UnhandledResponseError, /500: boom/)
-      end
-    end
-  end
-
   describe "#complete_and_fetch_examples" do
     subject { client.complete_and_fetch_examples(payload) }
 

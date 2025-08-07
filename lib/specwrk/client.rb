@@ -99,12 +99,6 @@ module Specwrk
       end
     end
 
-    def complete_examples(examples)
-      response = post "/complete", body: examples.to_json
-
-      (response.code == "200") ? true : raise(UnhandledResponseError.new("#{response.code}: #{response.body}"))
-    end
-
     def complete_and_fetch_examples(examples)
       response = post "/complete_and_pop", body: examples.to_json
 

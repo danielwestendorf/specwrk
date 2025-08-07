@@ -132,15 +132,6 @@ RSpec.describe Specwrk::Web::App do
       it { is_expected.to eq 101 }
     end
 
-    context "POST /complete" do
-      let(:http_method) { "POST" }
-      let(:path) { "/complete" }
-
-      before { stub_endpoint(Specwrk::Web::Endpoints::Complete, 102) }
-
-      it { is_expected.to eq 102 }
-    end
-
     context "POST /seed" do
       let(:http_method) { "POST" }
       let(:path) { "/seed" }

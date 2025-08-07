@@ -127,28 +127,6 @@ RSpec.describe Specwrk::Web::Endpoints do
       end
     end
 
-    describe Specwrk::Web::Endpoints::Complete do
-      let(:request_method) { "POST" }
-      let(:body) {
-        JSON.generate([
-          {id: "a.rb:1", file_path: "a.rb", run_time: 0.1, started_at: Time.now.iso8601, finished_at: Time.now.iso8601},
-          {id: "a.rb:3", file_path: "a.rb", run_time: 0.1, started_at: Time.now.iso8601, finished_at: Time.now.iso8601}
-        ])
-      }
-
-      let(:existing_processing_data) do
-        {
-          "a.rb:1": {id: "a.rb:1", file_path: "a.rb", expected_run_time: 0.1},
-          "a.rb:2": {id: "a.rb:2", file_path: "a.rb", expected_run_time: 0.1}
-        }
-      end
-
-      it { is_expected.to eq(ok) }
-      it { expect { subject }.to change { run_times.reload.length }.from(0).to(2) }
-      it { expect { subject }.to change { processing.reload.length }.from(2).to(1) }
-      it { expect { subject }.to change { completed.reload.length }.from(0).to(1) }
-    end
-
     describe Specwrk::Web::Endpoints::Pop do
       context "successfully pops an item off the queue" do
         let(:existing_pending_data) do

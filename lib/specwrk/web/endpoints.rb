@@ -190,29 +190,6 @@ module Specwrk
         end
       end
 
-      class Complete < Base
-        def with_response
-          warn "[DEPRECATED] This endpoint will be retired in favor of CompleteAndPop. Upgrade your clients."
-          completed.merge!(completed_examples)
-          processing.delete(*completed_examples.keys)
-
-          ok
-        end
-
-        private
-
-        def completed_examples
-          @completed_data ||= payload.map { |example| [example[:id], example] if processing[example[:id]] }.compact.to_h
-        end
-
-        # We don't care about exact values here, just approximate run times are fine
-        # So if we overwrite run times from another process it is nbd
-        def after_lock
-          run_time_data = payload.map { |example| [example[:id], example[:run_time]] }.to_h
-          run_times.merge! run_time_data
-        end
-      end
-
       class Popable < Base
         private
 
