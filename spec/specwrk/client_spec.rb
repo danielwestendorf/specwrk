@@ -146,6 +146,28 @@ RSpec.describe Specwrk::Client do
     end
   end
 
+  describe "#worker_status" do
+    subject { client.worker_status }
+
+    let(:client) { described_class.new }
+
+    context "not set" do
+      it { is_expected.to eq(1) }
+    end
+
+    context "server returns a value" do
+      before do
+        stub_request(:get, "#{base_uri}/heartbeat")
+          .with(headers: headers)
+          .to_return(status: 200, headers: {"X-Specwrk-Status" => 42})
+
+        client.heartbeat
+      end
+
+      it { is_expected.to eq(42) }
+    end
+  end
+
   describe "#heartbeat" do
     subject { client.heartbeat }
 

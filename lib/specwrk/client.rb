@@ -44,12 +44,13 @@ module Specwrk
       raise Errno::ECONNREFUSED unless connected
     end
 
-    attr_reader :last_request_at, :retry_count
+    attr_reader :last_request_at, :retry_count, :worker_status
 
     def initialize
       @mutex = Mutex.new
       @http = self.class.build_http
       @http.start
+      @worker_status = 1
     end
 
     def close
@@ -165,7 +166,11 @@ module Specwrk
     def make_request(request)
       @mutex.synchronize do
         @last_request_at = Time.now
-        @http.request(request).tap { @retry_count = 0 }
+        @http.request(request).tap do |response|
+          @retry_count = 0
+
+          @worker_status = response["x-specwrk-status"].to_i if response["x-specwrk-status"]
+        end
       end
     end
 
