@@ -33,6 +33,8 @@ module Specwrk
 
           after_lock
 
+          final_response[1]["x-specwrk-status"] = (worker[:failed] || 1).to_s
+
           final_response
         end
 
@@ -238,6 +240,8 @@ module Specwrk
       end
 
       class CompleteAndPop < Popable
+        EXAMPLE_STATUSES = %w[passed failed pending]
+
         def with_response
           completed.merge!(completed_examples)
           processing.delete(*completed_examples.keys)
@@ -251,10 +255,22 @@ module Specwrk
           @completed_data ||= payload.map { |example| [example[:id], example] if processing[example[:id]] }.compact.to_h
         end
 
-        # We don't care about exact values here, just approximate run times are fine
-        # So if we overwrite run times from another process it is nbd
+        def completed_examples_status_counts
+          @completed_examples_status_counts ||= completed_examples.values.map { |example| example[:status] }.tally
+        end
+
         def after_lock
+          # We don't care about exact values here, just approximate run times are fine
+          # So if we overwrite run times from another process it is nbd
           run_times.merge! run_time_data
+
+          # workers are single proces, single-threaded, so safe to do this work without the lock
+          existing_status_counts = worker.multi_read(*EXAMPLE_STATUSES)
+          new_status_counts = EXAMPLE_STATUSES.map do |status|
+            [status, existing_status_counts.fetch(status, 0) + completed_examples_status_counts.fetch(status, 0)]
+          end.to_h
+
+          worker.merge!(new_status_counts)
         end
 
         def run_time_data

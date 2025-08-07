@@ -72,7 +72,7 @@ module Specwrk
     end
 
     def to_h
-      adapter.multi_read(*keys).transform_keys!(&:to_sym)
+      multi_read(*keys).transform_keys!(&:to_sym)
     end
 
     def inspect
