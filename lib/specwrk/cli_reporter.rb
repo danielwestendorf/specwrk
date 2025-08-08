@@ -28,6 +28,10 @@ module Specwrk
         reruns_lines.each { |(command, description)| print "#{colorizer.wrap(command, :red)} #{colorizer.wrap(description, :cyan)}\n" }
         puts
         1
+      elsif unexecuted_count.positive?
+        puts colorizer.wrap(totals_line, :red)
+
+        1
       elsif pending_count.positive?
         puts colorizer.wrap(totals_line, :yellow)
         0
@@ -48,7 +52,8 @@ module Specwrk
     def totals_line
       summary = RSpec::Core::Formatters::Helpers.pluralize(example_count, "example") +
         ", " + RSpec::Core::Formatters::Helpers.pluralize(failure_count, "failure")
-      summary += ", #{pending_count} pending" if pending_count > 0
+      summary += ", #{pending_count} pending" if pending_count.positive?
+      summary += ". #{RSpec::Core::Formatters::Helpers.pluralize(unexecuted_count, "example")} not executed" if unexecuted_count.positive?
 
       summary
     end
@@ -79,6 +84,10 @@ module Specwrk
 
     def pending_count
       report_data.dig(:meta, :pending)
+    end
+
+    def unexecuted_count
+      report_data.dig(:meta, :unexecuted)
     end
 
     def example_count

@@ -46,6 +46,7 @@ RSpec.describe Specwrk::CLIReporter do
         let(:total_run_time) { 5.0 }
         let(:failure_count) { 0 }
         let(:pending_count) { 0 }
+        let(:unexecuted_count) { 0 }
         let(:example_count) { 100 }
 
         before do
@@ -60,6 +61,8 @@ RSpec.describe Specwrk::CLIReporter do
             .and_return(failure_count)
           allow(instance).to receive(:pending_count)
             .and_return(pending_count)
+          allow(instance).to receive(:unexecuted_count)
+            .and_return(unexecuted_count)
           allow(instance).to receive(:example_count)
             .and_return(example_count)
 
@@ -82,6 +85,16 @@ RSpec.describe Specwrk::CLIReporter do
             expect(instance).to receive(:puts).with("\nFailed examples:\n\n")
             expect(instance).to receive(:print).with("\e[31mrspec a.rb:73\e[0m \e[36m# Broken test\e[0m\n")
             expect(instance).to receive(:puts)
+            expect(subject).to eq(1)
+          end
+        end
+
+        context "client returns report data with positive unexecuted_count count" do
+          let(:unexecuted_count) { 1 }
+
+          it "prints finish summary and totals line then returns 1" do
+            expect(instance).to receive(:puts).with("\nFinished in 2.5s (total execution time of 5s)\n")
+            expect(instance).to receive(:puts).with("\e[31m100 examples, 0 failures. 1 example not executed\e[0m")
             expect(subject).to eq(1)
           end
         end

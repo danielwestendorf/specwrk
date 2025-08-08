@@ -174,10 +174,10 @@ RSpec.describe Specwrk::Web::Endpoints do
           .and_return(completed_dbl)
 
         allow(completed_dbl).to receive(:dump)
-          .and_return({foo: "bar"})
+          .and_return({foo: "bar", meta: {}})
       end
 
-      it { is_expected.to eq([200, {"content-type" => "application/json", "x-specwrk-status" => "42"}, [JSON.generate(foo: "bar")]]) }
+      it { is_expected.to eq([200, {"content-type" => "application/json", "x-specwrk-status" => "42"}, [JSON.generate(foo: "bar", meta: {unexecuted: 0})]]) }
     end
 
     describe Specwrk::Web::Endpoints::CompleteAndPop do

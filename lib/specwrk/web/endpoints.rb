@@ -145,6 +145,7 @@ module Specwrk
 
         def with_response
           pending.clear
+          processing.clear
           failure_counts.clear
 
           pending.max_retries = payload.fetch(:max_retries, "0").to_i
@@ -331,15 +332,15 @@ module Specwrk
 
       class Report < Base
         def with_response
-          [200, {"content-type" => "application/json"}, [JSON.generate(completed.dump)]]
+          completed_dump = completed.dump
+          completed_dump[:meta][:unexecuted] = pending.length + processing.length
+
+          [200, {"content-type" => "application/json"}, [JSON.generate(completed_dump)]]
         end
       end
 
       class Shutdown < Base
         def with_response
-          pending.clear
-          processing.clear
-
           interupt! if ENV["SPECWRK_SRV_SINGLE_RUN"]
 
           [200, {"content-type" => "text/plain"}, ["✌️"]]
