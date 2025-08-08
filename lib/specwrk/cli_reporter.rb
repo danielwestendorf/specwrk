@@ -19,14 +19,21 @@ module Specwrk
       puts "\nFinished in #{Specwrk.human_readable_duration total_duration} " \
                           "(total execution time of #{Specwrk.human_readable_duration total_run_time})\n"
 
+      if flake_count.positive?
+        puts "\nFlaked examples:\n\n"
+        flake_reruns_lines.each { |(command, description)| print "#{colorizer.wrap(command, :magenta)} #{colorizer.wrap(description, :cyan)}\n" }
+        puts ""
+      end
+
       client.shutdown
 
       if failure_count.positive?
         puts colorizer.wrap(totals_line, :red)
 
         puts "\nFailed examples:\n\n"
-        reruns_lines.each { |(command, description)| print "#{colorizer.wrap(command, :red)} #{colorizer.wrap(description, :cyan)}\n" }
-        puts
+        failure_reruns_lines.each { |(command, description)| print "#{colorizer.wrap(command, :red)} #{colorizer.wrap(description, :cyan)}\n" }
+        puts ""
+
         1
       elsif unexecuted_count.positive?
         puts colorizer.wrap(totals_line, :red)
@@ -53,16 +60,25 @@ module Specwrk
       summary = RSpec::Core::Formatters::Helpers.pluralize(example_count, "example") +
         ", " + RSpec::Core::Formatters::Helpers.pluralize(failure_count, "failure")
       summary += ", #{pending_count} pending" if pending_count.positive?
+      summary += ", #{RSpec::Core::Formatters::Helpers.pluralize(flake_count, "example")} flaked #{RSpec::Core::Formatters::Helpers.pluralize(total_flakes, "time")}" if flake_count.positive?
       summary += ". #{RSpec::Core::Formatters::Helpers.pluralize(unexecuted_count, "example")} not executed" if unexecuted_count.positive?
 
       summary
     end
 
-    def reruns_lines
-      @reruns_lines ||= report_data.dig(:examples).map do |id, example|
+    def failure_reruns_lines
+      @failure_reruns_lines ||= report_data.dig(:examples).values.map do |example|
         next unless example[:status] == "failed"
 
         ["rspec #{example[:file_path]}:#{example[:line_number]}", "# #{example[:full_description]}"]
+      end.compact
+    end
+
+    def flake_reruns_lines
+      @flake_reruns_lines ||= report_data.dig(:flakes).map do |example_id, count|
+        example = report_data.dig(:examples, example_id)
+
+        ["rspec #{example[:file_path]}:#{example[:line_number]}", "# #{example[:full_description]}. Failed #{RSpec::Core::Formatters::Helpers.pluralize(count, "time")} before passing."]
       end.compact
     end
 
@@ -92,6 +108,14 @@ module Specwrk
 
     def example_count
       report_data.dig(:examples).length
+    end
+
+    def flake_count
+      report_data.dig(:flakes).length
+    end
+
+    def total_flakes
+      @total_flakes ||= report_data.dig(:flakes).values.sum
     end
 
     def client
