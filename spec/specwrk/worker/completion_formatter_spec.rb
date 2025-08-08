@@ -11,7 +11,7 @@ RSpec.describe Specwrk::Worker::CompletionFormatter do
   let(:instance) { described_class.new }
   let(:group_notification) { instance_double RSpec::Core::Notifications::ExamplesNotification, notifications: notifications }
 
-  def notification_factory(status)
+  def notification_factory(status, exception = nil)
     execution_result = instance_double RSpec::Core::Example::ExecutionResult,
       status: status,
       started_at: Time.now - 10,
@@ -22,11 +22,17 @@ RSpec.describe Specwrk::Worker::CompletionFormatter do
       id: "foo.rb:1",
       full_description: "foobar",
       execution_result: execution_result,
+      exception: exception,
       metadata: {
         file_path: "foo.rb",
         line_number: 1
       }
-    instance_double(RSpec::Core::Notifications::ExampleNotification, example: example)
+
+    if status == :failed
+      instance_double(RSpec::Core::Notifications::FailedExampleNotification, example: example, formatted_backtrace: "foobar")
+    else
+      instance_double(RSpec::Core::Notifications::ExampleNotification, example: example)
+    end
   end
 
   describe "#stop" do
@@ -34,10 +40,10 @@ RSpec.describe Specwrk::Worker::CompletionFormatter do
 
     context "all examples passed" do
       let(:notifications) do
-        [notification_factory(:passed), notification_factory(:passed)]
+        [notification_factory(:passed), notification_factory(:passed), notification_factory(:failed, StandardError.new)]
       end
 
-      it { expect { subject }.to change(instance.examples, :length).from(0).to(2) }
+      it { expect { subject }.to change(instance.examples, :length).from(0).to(3) }
     end
   end
 end

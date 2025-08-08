@@ -83,6 +83,17 @@ jobs:
             - .specwrk/report.json
           key: specwrk-{{ .Branch }}
       ## /SPECWRK STEP ##
+  
+      - run: 
+          name: Echo the workers output for giggles
+          command: |
+            shopt -s nullglob
+            for file in /tmp/specwrk/main/*.ndjson; do
+              echo "===== $file ====="
+              cat "$file"
+              echo
+            done
+
         
   specwrk-multi-node-prepare:
     docker:
@@ -116,7 +127,6 @@ jobs:
               --key "$SPECWRK_KEY" \
               --run "$CIRCLE_WORKFLOW_ID" \
               spec/
-
       ## /SPECWRK STEP ##
 
   specwrk-multi-node:
@@ -154,3 +164,14 @@ jobs:
               --run "$CIRCLE_WORKFLOW_ID" \
               --count 2
       ## /SPECWRK STEP ##
+      
+      - run: 
+          name: Echo the workers output for giggles
+          command: |
+            shopt -s nullglob
+            for file in /tmp/specwrk/main/*.ndjson; do
+              echo "===== $file ====="
+              cat "$file"
+              echo
+            done
+

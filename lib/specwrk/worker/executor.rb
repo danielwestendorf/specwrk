@@ -24,12 +24,13 @@ module Specwrk
 
         example_ids = examples.map { |example| example[:id] }
 
-        options = RSpec::Core::ConfigurationOptions.new rspec_options + example_ids
+        options = RSpec::Core::ConfigurationOptions.new ["--format", "Specwrk::Worker::NullFormatter"] + example_ids
         RSpec::Core::Runner.new(options).run($stderr, $stdout)
       end
 
       # https://github.com/skroutz/rspecq/blob/341383ce3ca25f42fad5483cbb6a00ba1c405570/lib/rspecq/worker.rb#L208-L224
       def reset!
+        flush_log
         completion_formatter.examples.clear
 
         RSpec.clear_examples
@@ -71,12 +72,24 @@ module Specwrk
         @completion_formatter ||= CompletionFormatter.new
       end
 
-      def rspec_options
-        @rspec_options ||= if ENV["SPECWRK_OUT"]
-          ["--format", "json", "--out", File.join(ENV["SPECWRK_OUT"], "#{ENV.fetch("SPECWRK_ID", "specwrk-worker")}.json")]
+      def flush_log
+        completion_formatter.examples.each { |example| json_log_file.puts example }
+      end
+
+      def json_log_file
+        @json_log_file ||= if json_log_file_path
+          FileUtils.mkdir_p(File.dirname(json_log_file_path))
+          File.truncate(json_log_file_path, 0) if File.exist?(json_log_file_path)
+          File.open(json_log_file_path, "a", sync: true)
         else
-          ["--format", "Specwrk::Worker::NullFormatter"]
+          File.open(File::NULL, "a")
         end
+      end
+
+      def json_log_file_path
+        return unless ENV["SPECWRK_OUT"]
+
+        @json_log_file_path ||= File.join(ENV["SPECWRK_OUT"], ENV["SPECWRK_RUN"], "#{ENV["SPECWRK_FORKED"]}.ndjson")
       end
     end
   end

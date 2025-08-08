@@ -13,7 +13,7 @@ module Specwrk
 
       def stop(group_notification)
         group_notification.notifications.map do |notification|
-          examples << {
+          hash = {
             id: notification.example.id,
             full_description: notification.example.full_description,
             status: notification.example.execution_result.status,
@@ -23,6 +23,16 @@ module Specwrk
             finished_at: notification.example.execution_result.finished_at.iso8601(6),
             run_time: notification.example.execution_result.run_time
           }
+
+          if (e = notification.example.exception)
+            hash[:exception] = {
+              class: e.class.name,
+              message: e.message,
+              backtrace: notification.formatted_backtrace
+            }
+          end
+
+          examples << hash
         end
       end
     end

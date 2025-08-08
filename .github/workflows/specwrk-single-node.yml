@@ -38,5 +38,14 @@ jobs:
       ## SPECWRK STEP ##
       - name: Run tests via specwrk start
         # This run will output a single failure when healthy, but because of retries the exit code will be zero
-        run: bundle exec specwrk start --count 2 --max-retries 1 spec/
+        run: bundle exec specwrk start --count 2 --max-retries 1 --output /tmp/specwrk/ spec/
       ## /SPECWRK STEP ##
+        
+      - name: Echo the workers output for giggles
+        run: |
+          shopt -s nullglob
+          for file in /tmp/specwrk/main/*.ndjson; do
+            echo "===== $file ====="
+            cat "$file"
+            echo
+          done

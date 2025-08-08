@@ -24,11 +24,8 @@ RSpec.describe Specwrk::Worker::Executor do
       expect(instance).to receive(:reset!)
         .and_return(true)
 
-      expect(instance).to receive(:rspec_options)
-        .and_return(["baz"])
-
       expect(RSpec::Core::ConfigurationOptions).to receive(:new)
-        .with(["baz", "foo.rb:1", "bar.rb:1"])
+        .with(["--format", "Specwrk::Worker::NullFormatter", "foo.rb:1", "bar.rb:1"])
         .and_return(options_dbl)
 
       expect(RSpec::Core::Runner).to receive(:new)
@@ -91,16 +88,5 @@ RSpec.describe Specwrk::Worker::Executor do
     subject { instance.completion_formatter }
 
     it { is_expected.to be_kind_of(Specwrk::Worker::CompletionFormatter) }
-  end
-
-  describe "#rspec_options" do
-    subject { instance.rspec_options }
-
-    context "SPECWRK_OUT defined" do
-      before { stub_const("ENV", {"SPECWRK_OUT" => "/tmp/foobar", "SPECWRK_ID" => "specwrk-worker-42"}) }
-
-      it { is_expected.to eq(%w[--format json --out /tmp/foobar/specwrk-worker-42.json]) }
-    end
-    context "SPECWRK_OUT blank"
   end
 end

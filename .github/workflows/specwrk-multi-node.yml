@@ -63,3 +63,13 @@ jobs:
       - name: Run tests via specwrk work
         run: bundle exec specwrk work --count 2
       ## /SPECWRK STEP ##
+    
+      - name: Echo the workers output for giggles
+        run: |
+          shopt -s nullglob
+          for file in /tmp/specwrk/main/*.ndjson; do
+            echo "===== $file ====="
+            cat "$file"
+            echo
+          done
+
