@@ -23,6 +23,10 @@ module Specwrk
 
       if failure_count.positive?
         puts colorizer.wrap(totals_line, :red)
+
+        puts "\nFailed examples:\n\n"
+        reruns_lines.each { |(command, description)| print "#{colorizer.wrap(command, :red)} #{colorizer.wrap(description, :cyan)}\n" }
+        puts
         1
       elsif pending_count.positive?
         puts colorizer.wrap(totals_line, :yellow)
@@ -47,6 +51,14 @@ module Specwrk
       summary += ", #{pending_count} pending" if pending_count > 0
 
       summary
+    end
+
+    def reruns_lines
+      @reruns_lines ||= report_data.dig(:examples).map do |id, example|
+        next unless example[:status] == "failed"
+
+        ["rspec #{example[:file_path]}:#{example[:line_number]}", "# #{example[:full_description]}"]
+      end.compact
     end
 
     def report_data

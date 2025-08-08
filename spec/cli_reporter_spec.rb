@@ -63,6 +63,12 @@ RSpec.describe Specwrk::CLIReporter do
           allow(instance).to receive(:example_count)
             .and_return(example_count)
 
+          allow(instance).to receive(:report_data)
+            .and_return({examples: {
+              "a.rb:73": {status: "failed", file_path: "a.rb", line_number: 73, full_description: "Broken test"},
+              "b.rb:4": {status: "passed"}
+            }})
+
           allow(instance).to receive(:client)
             .and_return(double(shutdown: nil))
         end
@@ -71,9 +77,11 @@ RSpec.describe Specwrk::CLIReporter do
           let(:failure_count) { 1 }
 
           it "prints finish summary and totals line then returns 1" do
-            expect(instance).to receive(:puts)
-              .with("\nFinished in 2.5s (total execution time of 5s)\n")
+            expect(instance).to receive(:puts).with("\nFinished in 2.5s (total execution time of 5s)\n")
             expect(instance).to receive(:puts).with("\e[31m100 examples, 1 failure\e[0m")
+            expect(instance).to receive(:puts).with("\nFailed examples:\n\n")
+            expect(instance).to receive(:print).with("\e[31mrspec a.rb:73\e[0m \e[36m# Broken test\e[0m\n")
+            expect(instance).to receive(:puts)
             expect(subject).to eq(1)
           end
         end
