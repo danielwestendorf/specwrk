@@ -6,21 +6,24 @@ module Specwrk
   class Watcher
     class Config
       def self.load(file)
-        instance = new
-
         if file && File.exist?(file)
-          instance.instance_eval(File.read(file), file, 1)
+          new(false).tap { |instance| instance.instance_eval(File.read(file), file, 1) }
+        else
+          new
         end
-
-        instance
       end
 
-      def initialize
-        @mappings = [
-          [/_spec\.rb$/, proc { |changed_file_path| changed_file_path }]
-        ]
+      def initialize(default_config = true)
+        if default_config
+          @mappings = [
+            [/_spec\.rb$/, proc { |changed_file_path| changed_file_path }]
+          ]
 
-        @ignore_patterns = [/^(?!.*\.rb$).+/]
+          @ignore_patterns = [/^(?!.*\.rb$).+/]
+        else
+          @mappings = []
+          @ignore_patterns = []
+        end
       end
 
       def map(pattern, &block)

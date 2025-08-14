@@ -225,6 +225,43 @@ Start a persistent Queue Server given one of the following methods
 
 See [specwrk serve --help](#specwrk-serve) for all possible configuration options.
 
+### Create a watchfile for the `watch` command
+Watch file (default path is `Specwrk.watchfile.rb` in the current directory) is a ruby file that will be instance eval'd to configure the watcher. There are two commands available:
+
+1. `ignore(Regexp)` to define files that should never trigger a run
+2. `map(Regexp, &blk)` to map a file change to the spec files that should be run to that file change
+
+By default, files without a `.rb` extension will be ignored and files ending with `_spec.rb` will be run. Presence of a watchfile will override these defaults.
+
+```ruby
+# Specwrk.watchfile.rb
+# Ignore all files which don't have an .rb extension
+ignore(/^(?!.*\.rb$).+/)
+
+# When a _spec.rb file changes, it should be run
+map(/_spec\.rb$/) do |spec_path|
+  spec_path
+end
+
+# If a file in lib changes, map it to the spec folder for it's spec file
+map(/lib\/.*\.rb$/) do |path|
+  path.gsub(/lib\/(.+)\.rb/, "spec/\\1_spec.rb")
+end
+
+# If a model file changes (assuming rails app structure), run the model's spec file
+# map(/app\/models\/.*.rb$/) do |path|
+#   path.gsub(/app\/models\/(.+)\.rb/, "spec/models/\\1_spec.rb")
+# end
+#
+# If a controlelr file changes (assuming rails app structure), run the controller and system specs file
+# map(/app\/controllers\/.*.rb$/) do |path|
+#   [
+#     path.gsub(/app\/controllers\/(.+)\.rb/, "spec/controllers/\\1_spec.rb"),
+#     path.gsub(/app\/controllers\/(.+)\.rb/, "spec/system/\\1_spec.rb")
+#   ]
+# end
+```
+
 ## Contributing
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/dwestendorf/specwrk.
