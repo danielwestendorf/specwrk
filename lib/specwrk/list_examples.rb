@@ -40,6 +40,7 @@ module Specwrk
     private
 
     def reset!
+      return unless ENV["SPECWRK_SEED"]
       RSpec.clear_examples
 
       # see https://github.com/rspec/rspec-core/pull/2723
