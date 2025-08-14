@@ -161,8 +161,7 @@ Options:
   --count=VALUE, -c VALUE           # The number of worker processes you want to start, default: 1
   --help, -h                        # Print this help
 ```
-```
-```
+
 ## Configuring your test environment
 If you test suite tracks state, starts servers, etc. and you plan on running many processes on the same node, you'll need to make
 adjustments to avoid conflicting port usage or database/state mutations.
