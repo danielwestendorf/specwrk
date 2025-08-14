@@ -35,6 +35,8 @@ Gem::Specification.new do |spec|
   spec.add_dependency "dry-cli"
   spec.add_dependency "rack"
   spec.add_dependency "webrick"
+  spec.add_dependency "listen"
+  spec.add_dependency "logger" # Required by listen
   spec.add_dependency "rackup"
   spec.add_dependency "rspec-core"
 
