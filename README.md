@@ -142,6 +142,27 @@ Options:
   --help, -h                        # Print this help
 ```
 
+### specwrk watch -c 8
+Starts 8 worker processes in watch mode for the current directory. Watched spec files will be distributed across the processes. By default, only looks at `_spec.rb` files. Configure a watchfile to map file changes to spec files (i.e. modification of `app/models/user.rb` should run `spec/models/user_spec.rb` and `spec/system/users_spec.rb`).
+
+```sh
+$ specwrk watch --help
+Command:
+  specwrk watch
+
+Usage:
+  specwrk watch
+
+Description:
+  Start a server and workers, watch for file changes in the current directory, and execute specs
+
+Options:
+  --watchfile=VALUE                 # Path to watchfile configuration, default: "Specwrk.watchfile.rb"
+  --count=VALUE, -c VALUE           # The number of worker processes you want to start, default: 1
+  --help, -h                        # Print this help
+```
+```
+```
 ## Configuring your test environment
 If you test suite tracks state, starts servers, etc. and you plan on running many processes on the same node, you'll need to make
 adjustments to avoid conflicting port usage or database/state mutations.
