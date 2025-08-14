@@ -74,6 +74,7 @@ module Specwrk
       def drain_outputs
         @final_outputs.each do |reader|
           reader.each_line { |line| $stdout.print line }
+          reader.close
         end
       end
 
@@ -252,7 +253,7 @@ module Specwrk
         require "specwrk/cli_reporter"
         status = Specwrk::CLIReporter.new.report
 
-        Specwrk.wait_for_pids_exit([web_pid, seed_pid] + @worker_pids)
+        Specwrk.wait_for_pids_exit([web_pid, seed_pid])
         exit(status)
       end
 
@@ -262,10 +263,161 @@ module Specwrk
       end
     end
 
+    class Watch < Dry::CLI::Command
+      desc "Start a server and workers, watch for file changes in the current directory, and execute specs"
+      option :watchfile, type: :string, default: "Specwrk.watchfile.rb", desc: "Path to watchfile configuration"
+      option :count, type: :integer, default: 1, aliases: ["-c"], desc: "The number of worker processes you want to start"
+
+      def call(count:, watchfile:, **args)
+        $stdout.sync = true
+
+        # nil this env var if it exists to prevent never-ending workers
+        ENV["SPECWRK_SRV_URI"] = nil
+        ENV["SPECWRK_SEED_WAITS"] = "0"
+        ENV["SPECWRK_MAX_BUCKET_SIZE"] = "1"
+        ENV["SPECWRK_COUNT"] = count.to_s
+        ENV["SPECWRK_RUN"] = "watch"
+
+        web_pid
+
+        return if Specwrk.force_quit
+
+        seed_pid
+
+        start_watcher(watchfile)
+
+        require "specwrk/cli_reporter"
+
+        loop do
+          status "👀 Watching for file changes..."
+
+          @worker_pids = nil
+          Thread.pass until file_queue.length.positive? || Specwrk.force_quit
+
+          break if Specwrk.force_quit
+
+          files = []
+          files.push(file_queue.pop) until file_queue.length.zero?
+          status "Running specs for #{files.join(" ")}..."
+          ipc.write(files.join(" "))
+
+          example_count = ipc.read.to_i
+          if example_count.positive?
+            puts "\n🌱 Seeded #{example_count} examples for execution\n"
+          else
+            puts "\n🙅 No examples to seed for execution\n"
+          end
+
+          next if example_count.zero?
+
+          return if Specwrk.force_quit
+          start_workers
+
+          Specwrk.wait_for_pids_exit(@worker_pids)
+
+          drain_outputs
+          return if Specwrk.force_quit
+
+          Specwrk::CLIReporter.new.report
+          puts
+          $stdout.flush
+        end
+
+        ipc.write "INT" # wakes the socket
+        Specwrk.wait_for_pids_exit([web_pid, seed_pid])
+      end
+
+      private
+
+      def web_pid
+        @web_pid ||= Process.fork do
+          require "specwrk/web"
+          require "specwrk/web/app"
+
+          ENV["SPECWRK_FORKED"] = "1"
+          status "Starting queue server..."
+          Specwrk::Web::App.run!
+        end
+      end
+
+      def seed_pid
+        @seed_pid ||= begin
+          ipc # must be initialized in the parent process
+
+          @seed_pid = Process.fork do
+            require "specwrk/seed_loop"
+
+            ENV["SPECWRK_FORKED"] = "1"
+            ENV["SPECWRK_SEED"] = "1"
+
+            Specwrk::SeedLoop.loop!(ipc)
+          end
+        end
+      end
+
+      def ipc
+        @ipc ||= begin
+          require "specwrk/ipc"
+
+          Specwrk::IPC.new
+        end
+      end
+
+      def start_watcher(watchfile)
+        require "specwrk/watcher"
+
+        Specwrk::Watcher.watch(Dir.pwd, file_queue, watchfile)
+      end
+
+      def file_queue
+        @file_queue ||= Queue.new
+      end
+
+      def status(msg)
+        print "\e[2K\r#{msg}"
+        $stdout.flush
+      end
+
+      def start_workers
+        @final_outputs = []
+        @worker_pids = worker_count.times.map do |i|
+          reader, writer = IO.pipe
+          @final_outputs << reader
+
+          Process.fork do
+            ENV["TEST_ENV_NUMBER"] = ENV["SPECWRK_FORKED"] = (i + 1).to_s
+            ENV["SPECWRK_ID"] = "specwrk-worker-#{i + 1}"
+
+            $final_output = writer # standard:disable Style/GlobalVars
+            $final_output.sync = true # standard:disable Style/GlobalVars
+            reader.close
+
+            require "specwrk/worker"
+
+            status = Specwrk::Worker.run!
+            $final_output.close # standard:disable Style/GlobalVars
+            exit(status)
+          end.tap { writer.close }
+        end
+      end
+
+      def drain_outputs
+        @final_outputs.each do |reader|
+          reader.each_line { |line| $stdout.print line }
+          reader.close
+        end
+      end
+
+      def worker_count
+        @worker_count ||= [1, ENV["SPECWRK_COUNT"].to_i].max
+      end
+    end
+
     register "version", Version, aliases: ["v", "-v", "--version"]
     register "work", Work, aliases: ["wrk", "twerk", "w"]
     register "serve", Serve, aliases: ["srv", "s"]
     register "seed", Seed
     register "start", Start
+    register "watch", Watch, aliases: ["w", "👀"]
   end
 end
