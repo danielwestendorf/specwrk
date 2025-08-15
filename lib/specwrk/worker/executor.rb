@@ -73,7 +73,7 @@ module Specwrk
       end
 
       def flush_log
-        completion_formatter.examples.each { |example| json_log_file.puts example }
+        completion_formatter.examples.each { |example| json_log_file.puts JSON.generate(example) }
       end
 
       def json_log_file

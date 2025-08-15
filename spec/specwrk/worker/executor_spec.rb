@@ -15,6 +15,34 @@ RSpec.describe Specwrk::Worker::Executor do
     it { is_expected.to be(instance.progress_formatter.final_output) }
   end
 
+  describe "#flush_log" do
+    let(:json_log_file_path) { File.join(Dir.tmpdir, "1.ndjson") }
+    let(:examples) do
+      [
+        {foo: "bar"},
+        {biz: "buzz"}
+      ]
+    end
+
+    before do
+      allow(instance).to receive(:json_log_file_path)
+        .and_return(json_log_file_path)
+
+      allow(instance).to receive(:completion_formatter)
+        .and_return(instance_double(Specwrk::Worker::CompletionFormatter, examples: examples))
+    end
+
+    it "writes the ndjson file" do
+      instance.flush_log
+      instance.json_log_file.flush
+      ndjson_contents = File.read(json_log_file_path)
+
+      expect(ndjson_contents).to eq(
+        %({"foo":"bar"}\n{"biz":"buzz"}\n)
+      )
+    end
+  end
+
   describe "#run" do
     let(:examples) { [{id: "foo.rb:1"}, {id: "bar.rb:1"}] }
     let(:options_dbl) { instance_double(RSpec::Core::ConfigurationOptions) }
