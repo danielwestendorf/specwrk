@@ -59,6 +59,8 @@ module Specwrk
       RSpec.world.wants_to_quit = Specwrk.force_quit
 
       RSpec.configuration.silence_filter_announcements = true
+      RSpec.configuration.filter_manager.inclusions.clear
+      RSpec.configuration.filter_manager.exclusions.clear
 
       true
     end
