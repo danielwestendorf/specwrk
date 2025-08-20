@@ -231,13 +231,13 @@ module Specwrk
         def examples
           @examples ||= begin
             examples = pending.shift_bucket
-            maximum_completion_threshold = (Time.now + ((pending.run_time_bucket_maximum || 30) * 2)).to_i
+            bucket_run_time_total = examples.map { |example| example.fetch(:expected_run_time, 10.0) }.compact.sum * 2
+            maximum_completion_threshold = (pending.run_time_bucket_maximum || 30.0) * 2
+            completion_threshold = Time.now + [bucket_run_time_total, maximum_completion_threshold, 20.0].max
 
             processing_data = examples.map do |example|
-              example_run_time_completion_threshold = (Time.now + example[:expected_run_time].to_f * 2).to_i
-
               [
-                example[:id], example.merge(completion_threshold: [maximum_completion_threshold, example_run_time_completion_threshold].compact.max)
+                example[:id], example.merge(completion_threshold: completion_threshold.to_f)
               ]
             end
 

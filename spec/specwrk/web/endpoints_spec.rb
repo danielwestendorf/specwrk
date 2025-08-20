@@ -140,7 +140,7 @@ RSpec.describe Specwrk::Web::Endpoints do
 
         it { is_expected.to eq([200, {"content-type" => "application/json", "x-specwrk-status" => "1"}, [JSON.generate([{id: "a.rb:2", file_path: "a.rb", expected_run_time: 0.1}])]]) }
         it { expect { subject }.to change { pending.reload.length }.from(1).to(0) }
-        it { expect { subject }.to change { processing.reload["a.rb:2"] }.from(nil).to({completion_threshold: instance_of(Integer), expected_run_time: 0.1, file_path: "a.rb", id: "a.rb:2"}) }
+        it { expect { subject }.to change { processing.reload["a.rb:2"] }.from(nil).to({completion_threshold: instance_of(Float), expected_run_time: 0.1, file_path: "a.rb", id: "a.rb:2"}) }
       end
 
       context "no items in any queue" do
@@ -218,7 +218,7 @@ RSpec.describe Specwrk::Web::Endpoints do
 
         it { is_expected.to eq([200, {"content-type" => "application/json", "x-specwrk-status" => "0"}, [JSON.generate([{id: "a.rb:2", file_path: "a.rb", expected_run_time: 0.1}])]]) }
         it { expect { subject }.to change { pending.reload.length }.from(1).to(0) }
-        it { expect { subject }.to change { processing.reload["a.rb:2"] }.from(nil).to({completion_threshold: instance_of(Integer), expected_run_time: 0.1, file_path: "a.rb", id: "a.rb:2"}) }
+        it { expect { subject }.to change { processing.reload["a.rb:2"] }.from(nil).to({completion_threshold: instance_of(Float), expected_run_time: 0.1, file_path: "a.rb", id: "a.rb:2"}) }
       end
 
       context "no items in the processing queue, but completed queue has items" do
