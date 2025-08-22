@@ -4,7 +4,7 @@ require "time"
 
 require "specwrk/client"
 
-require "rspec"
+require "rspec/core"
 require "rspec/core/formatters/helpers"
 require "rspec/core/formatters/console_codes"
 
