@@ -263,7 +263,7 @@ end
 ```
 
 ## Prior/other works
-There are many prior works for running rspec tests across multiple processes. Most of them combine process output making failures hard to grok. Some are good at running tests locally, but not on CI, while others are invserly true. Others are comercial or impactical without making a purchase.
+There are many prior works for running rspec tests across multiple processes. Most of them combine process output making failures hard to grok. Some are good at running tests locally, but not on CI, while others are inversely true. Others are comercial or impactical without making a purchase.
 
 specwrk is different because it:
 1. Puts your developer experience first. Easy execution. No messy outputs. Retries built in. Easy(er) debugging of flaky tests. 
