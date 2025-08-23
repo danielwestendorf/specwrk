@@ -54,8 +54,6 @@ module Specwrk
       1
     end
 
-    private
-
     def totals_line
       summary = RSpec::Core::Formatters::Helpers.pluralize(example_count, "example") +
         ", " + RSpec::Core::Formatters::Helpers.pluralize(failure_count, "failure")

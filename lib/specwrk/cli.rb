@@ -288,6 +288,8 @@ module Specwrk
 
         require "specwrk/cli_reporter"
 
+        title "👀 for changes"
+
         loop do
           status "👀 Watching for file changes..."
 
@@ -309,6 +311,7 @@ module Specwrk
           end
 
           next if example_count.zero?
+          title "👷 on #{example_count} examples"
 
           return if Specwrk.force_quit
           start_workers
@@ -318,8 +321,17 @@ module Specwrk
           drain_outputs
           return if Specwrk.force_quit
 
-          Specwrk::CLIReporter.new.report
+          reporter = Specwrk::CLIReporter.new
+
+          status = reporter.report
           puts
+
+          if status.zero?
+            title "🟢 #{reporter.example_count} examples passed"
+          else
+            title " 🔴 #{reporter.failure_count}/#{reporter.example_count} examples failed"
+          end
+
           $stdout.flush
         end
 
@@ -328,6 +340,11 @@ module Specwrk
       end
 
       private
+
+      def title(str)
+        $stdout.write "\e]0;#{str}\a"
+        $stdout.flush
+      end
 
       def web_pid
         @web_pid ||= Process.fork do
