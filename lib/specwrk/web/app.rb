@@ -16,7 +16,13 @@ end
 require "specwrk/web"
 require "specwrk/web/logger"
 require "specwrk/web/auth"
-require "specwrk/web/endpoints"
+require "specwrk/web/endpoints/health"
+require "specwrk/web/endpoints/heartbeat"
+require "specwrk/web/endpoints/seed"
+require "specwrk/web/endpoints/pop"
+require "specwrk/web/endpoints/complete_and_pop"
+require "specwrk/web/endpoints/report"
+require "specwrk/web/endpoints/shutdown"
 
 module Specwrk
   class Web
