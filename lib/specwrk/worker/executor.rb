@@ -2,7 +2,7 @@
 
 require "tempfile"
 
-require "rspec"
+require "rspec/core"
 
 require "specwrk/worker/progress_formatter"
 require "specwrk/worker/completion_formatter"
