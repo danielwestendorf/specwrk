@@ -106,6 +106,16 @@ module Specwrk
         ENV["SPECWRK_SRV_KEY"] = key
         ENV["SPECWRK_SRV_GROUP_BY"] = group_by
       end
+
+      def find_open_port
+        require "socket"
+
+        server = TCPServer.new("127.0.0.1", 0)
+        port = server.addr[1]
+        server.close
+
+        port
+      end
     end
 
     class Version < Dry::CLI::Command
@@ -207,6 +217,10 @@ module Specwrk
         # nil this env var if it exists to prevent never-ending workers
         ENV["SPECWRK_SRV_URI"] = nil
 
+        # Start on a random open port to not conflict with another server
+        ENV["SPECWRK_SRV_PORT"] = find_open_port.to_s
+        ENV["SPECWRK_SRV_URI"] = "http://localhost:#{ENV.fetch("SPECWRK_SRV_PORT", "5138")}"
+
         web_pid = Process.fork do
           require "specwrk/web"
           require "specwrk/web/app"
@@ -273,6 +287,11 @@ module Specwrk
 
         # nil this env var if it exists to prevent never-ending workers
         ENV["SPECWRK_SRV_URI"] = nil
+
+        # Start on a random open port to not conflict with another server
+        ENV["SPECWRK_SRV_PORT"] = find_open_port.to_s
+        ENV["SPECWRK_SRV_URI"] = "http://localhost:#{ENV.fetch("SPECWRK_SRV_PORT", "5138")}"
+
         ENV["SPECWRK_SEED_WAITS"] = "0"
         ENV["SPECWRK_MAX_BUCKET_SIZE"] = "1"
         ENV["SPECWRK_COUNT"] = count.to_s
@@ -427,6 +446,16 @@ module Specwrk
 
       def worker_count
         @worker_count ||= [1, ENV["SPECWRK_COUNT"].to_i].max
+      end
+
+      def find_open_port
+        require "socket"
+
+        server = TCPServer.new("127.0.0.1", 0)
+        port = server.addr[1]
+        server.close
+
+        port
       end
     end
 
