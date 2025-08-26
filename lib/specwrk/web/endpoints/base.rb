@@ -15,11 +15,11 @@ module Specwrk
         end
 
         def response
-          before_lock
-
           return with_response unless run_id # No run_id, no datastore usage in the endpoint
 
           payload # parse the payload before any locking
+
+          before_lock
 
           worker[:first_seen_at] ||= Time.now.iso8601
           worker[:last_seen_at] = Time.now.iso8601
@@ -119,7 +119,7 @@ module Specwrk
         end
 
         def with_lock
-          Store.with_lock(URI(ENV.fetch("SPECWRK_SRV_STORE_URI", "memory:///")), "server") { yield }
+          Store.with_lock(URI(ENV.fetch("SPECWRK_SRV_STORE_URI", "memory:///")), run_id) { yield }
         end
       end
 
