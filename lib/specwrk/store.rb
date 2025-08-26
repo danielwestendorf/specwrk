@@ -19,6 +19,11 @@ module Specwrk
           require "specwrk/store/file_adapter" unless defined?(FileAdapter)
 
           FileAdapter
+        when /redis/
+          # Expects the specwrk-store-redis_adapter gem to be available
+          require "specwrk/store/redis_adapter" unless defined?(RedisAdapter)
+
+          RedisAdapter
         end
       end
     end

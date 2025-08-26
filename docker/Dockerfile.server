@@ -14,7 +14,7 @@ COPY $GEM_FILE ./
 RUN gem install ./$GEM_FILE --no-document
 RUN rm ./$GEM_FILE
 
-RUN gem install pitchfork thruster
+RUN gem install pitchfork thruster specwrk-store-redis_adapter
 COPY config.ru ./
 COPY docker/pitchfork.conf ./
 
