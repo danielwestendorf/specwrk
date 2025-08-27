@@ -13,6 +13,12 @@ module Specwrk
 
           [200, {"content-type" => "application/json"}, [JSON.generate(completed_dump)]]
         end
+
+        private
+
+        def skip_lock
+          true
+        end
       end
     end
   end

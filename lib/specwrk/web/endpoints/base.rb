@@ -46,6 +46,10 @@ module Specwrk
 
         attr_reader :request
 
+        def skip_lock
+          false
+        end
+
         def before_lock
         end
 
@@ -119,7 +123,11 @@ module Specwrk
         end
 
         def with_lock
-          Store.with_lock(URI(ENV.fetch("SPECWRK_SRV_STORE_URI", "memory:///")), run_id) { yield }
+          if skip_lock
+            yield
+          else
+            Store.with_lock(URI(ENV.fetch("SPECWRK_SRV_STORE_URI", "memory:///")), run_id) { yield }
+          end
         end
       end
 
