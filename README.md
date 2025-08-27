@@ -205,7 +205,7 @@ Multi-node, multi-process works best when have many nodes running tests. This di
 To accomplish this, a central queue server is required, examples must be explicitly seeded, and workers explicitly started.
 
 1. Start a centralized queue server (see [Running a persistent Queue Server](#running-a-persistent-queue-server)) 
-2. Seed the server with the specs for the current `SPECWWRK_RUN` pointed at your central server
+2. Seed the server with the specs for the current `SPECWRK_RUN` pointed at your central server
 3. Execute `specwrk work` for the given process count, for the current `SPECWRK_RUN`, pointed at your central server
 
 [GitHub Actions Example](https://github.com/danielwestendorf/specwrk/blob/main/.github/workflows/specwrk-multi-node.yml)
