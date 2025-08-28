@@ -19,8 +19,17 @@ module Specwrk
 
         private
 
+        def before_lock
+          processing_examples
+          completed_examples
+        end
+
         def all_examples
-          @all_examples ||= payload.map { |example| [example[:id], example] if processing[example[:id]] }.compact.to_h
+          @all_examples ||= payload.map { |example| [example[:id], example] if processing_examples[example[:id]] }.compact.to_h
+        end
+
+        def processing_examples
+          @processing_examples ||= processing.multi_read(*payload.map { |example| example[:id] })
         end
 
         def completed_examples
@@ -67,7 +76,7 @@ module Specwrk
           # So if we overwrite run times from another process it is nbd
           run_times.merge! run_time_data
 
-          # workers are single proces, single-threaded, so safe to do this work without the lock
+          # workers are single process, single-threaded, so safe to do this work without the lock
           existing_status_counts = worker.multi_read(*EXAMPLE_STATUSES)
           new_status_counts = EXAMPLE_STATUSES.map do |status|
             [status, existing_status_counts.fetch(status, 0) + completed_examples_status_counts.fetch(status, 0)]
