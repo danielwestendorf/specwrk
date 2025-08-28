@@ -131,9 +131,11 @@ module Specwrk
 
       desc "Seed the server with a list of specs for the run"
       option :max_retries, default: 0, desc: "Number of times an example will be re-run should it fail"
-      argument :dir, type: :array, required: false, default: "spec", desc: "Relative spec directory to run against"
+      argument :dir, type: :array, required: false, desc: "Relative spec directory to run against, default: spec/"
 
       def call(max_retries:, dir:, **args)
+        dir = ["spec"] if dir.length.zero?
+
         self.class.setup(**args)
 
         require "specwrk/list_examples"
@@ -208,9 +210,11 @@ module Specwrk
 
       desc "Start a server and workers, monitor until complete"
       option :max_retries, default: 0, desc: "Number of times an example will be re-run should it fail"
-      argument :dir, required: false, type: :array, default: "spec", desc: "Relative spec directory to run against"
+      argument :dir, type: :array, required: false, desc: "Relative spec directory to run against, default: spec/"
 
       def call(max_retries:, dir:, **args)
+        dir = ["spec"] if dir.length.zero?
+
         self.class.setup(**args)
         $stdout.sync = true
 
