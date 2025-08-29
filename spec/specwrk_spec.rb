@@ -37,7 +37,7 @@ RSpec.describe Specwrk do
     end
   end
 
-  if ENV["SPECWRK_SRV_URI"].nil? && ENV["SPECWRK_FORKED"]
+  if ENV.fetch("SPECWRK_SRV_URI", "").include?("localhost") && ENV["SPECWRK_FORKED"]
     describe "a test that only passes on the second retry on the same instance (assume max retries > 0)" do
       it "should succeed on the 2nd run" do
         file = File.join(Dir.tmpdir, "specwrk.retry")
