@@ -34,7 +34,7 @@ Commands:
 Intended for quick ad-hoc local host development or single-node CI runs. This command starts a queue server, seeds it with examples from the `spec/` directory, and starts `8` worker processes. It will report the ultimate success or failure.
 
 ```sh
-$ start --help
+$ specwrk start --help
 Command:
   specwrk start
 
@@ -164,13 +164,13 @@ Options:
 ```
 
 ## Configuring your test environment
-If you test suite tracks state, starts servers, etc. and you plan on running many processes on the same node, you'll need to make
+If your test suite tracks state, starts servers, etc. and you plan on running many processes on the same node, you'll need to make
 adjustments to avoid conflicting port usage or database/state mutations.
 
 `specwrk` workers will have `TEST_ENV_NUMBER={i}` set to help you configure approriately.
 
 ### Rails
-Rails has had easy multi-process test setup for a while now by creating unique test databases per process. For my rails v7.2 app which uses PostgreSQL and Capyabara, I made these changes to my `spec/rails_helper.rb`:
+Rails has had easy multi-process test setup for a while now by creating unique test databases per process. For my rails v7.2 app which uses PostgreSQL and Capybara, I made these changes to my `spec/rails_helper.rb`:
 
 ```diff
 ++ if ENV["TEST_ENV_NUMBER"]
@@ -200,7 +200,7 @@ Make sure to persist `$SPECWRK_OUT/report.json` between runs so that subsequent 
 [CircleCI Example](https://github.com/danielwestendorf/specwrk/blob/main/.circleci/config.yml) (specwrk-single-node job)
 
 ### Multi-node, multi-process
-Multi-node, multi-process works best when have many nodes running tests. This distributes the test execution across the nodes until the queue is for the run is empty, optimizing for slowest specs first. This distributes test execution across all nodes evenly(-ish).
+Multi-node, multi-process works best when you have many nodes running tests. This distributes the test execution across the nodes until the queue is for the run is empty, optimizing for slowest specs first. This distributes test execution across all nodes evenly(-ish).
 
 To accomplish this, a central queue server is required, examples must be explicitly seeded, and workers explicitly started.
 
@@ -221,7 +221,7 @@ Start a persistent Queue Server given one of the following methods
 
 ### Configuring your Queue Server
 - Secure your server with a key either with the `SPECWRK_SRV_KEY` environment variable or `--key` CLI option
-- Configure the server output to be a persisted volume so your timings survive between system restarts with the `SPECWRK_SRV_STORE_URI` environment variable or `--store-uri` CLI option. By default, `memory:///` will be used for the run's data stores (so run data will no survive server restarts) while `file://#{Dir.tmpdir}` will be used for run timings. Pass `--store-uri file:///whatever/absolute/path` to store all data on disk (required for multiple server processes).
+- Configure the server output to be a persisted volume so your timings survive between system restarts with the `SPECWRK_SRV_STORE_URI` environment variable or `--store-uri` CLI option. By default, `memory:///` will be used for the run's data stores (so run data will not survive server restarts) while `file://#{Dir.tmpdir}` will be used for run timings. Pass `--store-uri file:///whatever/absolute/path` to store all data on disk (required for multiple server processes).
 
 See [specwrk-store-redis_adapter](https://github.com/danielwestendorf/specwrk-store-redis_adapter) for Redis-compatible backed storage.
 
@@ -245,7 +245,7 @@ map(/_spec\.rb$/) do |spec_path|
   spec_path
 end
 
-# If a file in lib changes, map it to the spec folder for it's spec file
+# If a file in lib changes, map it to the spec folder for its spec file
 map(/lib\/.*\.rb$/) do |path|
   path.gsub(/lib\/(.+)\.rb/, "spec/\\1_spec.rb")
 end
@@ -255,7 +255,7 @@ end
 #   path.gsub(/app\/models\/(.+)\.rb/, "spec/models/\\1_spec.rb")
 # end
 #
-# If a controlelr file changes (assuming rails app structure), run the controller and system specs file
+# If a controller file changes (assuming rails app structure), run the controller and system specs file
 # map(/app\/controllers\/.*.rb$/) do |path|
 #   [
 #     path.gsub(/app\/controllers\/(.+)\.rb/, "spec/controllers/\\1_spec.rb"),
@@ -265,7 +265,7 @@ end
 ```
 
 ## Prior/other works
-There are many prior works for running rspec tests across multiple processes. Most of them combine process output making failures hard to grok. Some are good at running tests locally, but not on CI, while others are inversely true. Others are comercial or impactical without making a purchase.
+There are many prior works for running rspec tests across multiple processes. Most of them combine process output making failures hard to grok. Some are good at running tests locally, but not on CI, while others are inversely true. Others are commercial or impractical without making a purchase.
 
 specwrk is different because it:
 1. Puts your developer experience first. Easy execution. No messy outputs. Retries built in. Easy(er) debugging of flaky tests. 
@@ -287,7 +287,7 @@ specwrk is different because it:
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/dwestendorf/specwrk.
+Bug reports and pull requests are welcome on GitHub at https://github.com/danielwestendorf/specwrk.
 
 ## License
 
