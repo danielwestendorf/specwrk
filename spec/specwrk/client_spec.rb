@@ -31,7 +31,8 @@ RSpec.describe Specwrk::Client do
       "SPECWRK_SRV_URI" => base_uri,
       "SPECWRK_SRV_KEY" => srv_key,
       "SPECWRK_RUN" => run_id,
-      "SPECWRK_ID" => worker_id
+      "SPECWRK_ID" => worker_id,
+      "SPECWRK_NETWORK_RETRIES" => "5"
     ))
   end
 
@@ -294,8 +295,8 @@ RSpec.describe Specwrk::Client do
       before do
         stub_request(:post, "#{base_uri}/complete_and_pop")
           .with(headers: headers)
-          .to_raise(Net::OpenTimeout).then
-          .to_raise(Net::OpenTimeout).then
+          .to_raise(Net::ReadTimeout).then
+          .to_raise(Net::WriteTimeout).then
           .to_return(status: 200, body: examples.to_json)
       end
 
@@ -316,8 +317,8 @@ RSpec.describe Specwrk::Client do
       end
 
       it "warns four times then re-raises the timeout" do
-        expect(client).to receive(:warn).exactly(4).times
-        expect(client).to receive(:sleep).exactly(4).times
+        expect(client).to receive(:warn).exactly(5).times
+        expect(client).to receive(:sleep).exactly(5).times
 
         expect { subject }.to raise_error(Net::ReadTimeout)
       end

@@ -52,6 +52,7 @@ Options:
   --key=VALUE, -k VALUE             # Authentication key clients must use for access. Overrides SPECWRK_SRV_KEY, default: ""
   --run=VALUE, -r VALUE             # The run identifier for this job execution. Overrides SPECWRK_RUN, default: "main"
   --timeout=VALUE, -t VALUE         # The amount of time to wait for the server to respond. Overrides SPECWRK_TIMEOUT, default: "5"
+  --network-retries=VALUE           # The number of times to retry in the event of a network failure. Overrides SPECWRK_NETWORK_RETRIES, default: "1"
   --id=VALUE                        # The identifier for this worker. Overrides SPECWRK_ID. If none provided one in the format of specwrk-worker-8_RAND_CHARS-COUNT_INDEX will be used
   --count=VALUE, -c VALUE           # The number of worker processes you want to start, default: 1
   --output=VALUE, -o VALUE          # Directory where worker output is stored. Overrides SPECWRK_OUT, default: ".specwrk/"
@@ -113,6 +114,7 @@ Options:
   --key=VALUE, -k VALUE             # Authentication key clients must use for access. Overrides SPECWRK_SRV_KEY, default: ""
   --run=VALUE, -r VALUE             # The run identifier for this job execution. Overrides SPECWRK_RUN, default: "main"
   --timeout=VALUE, -t VALUE         # The amount of time to wait for the server to respond. Overrides SPECWRK_TIMEOUT, default: "5"
+  --network-retries=VALUE           # The number of times to retry in the event of a network failure. Overrides SPECWRK_NETWORK_RETRIES, default: "1"
   --max-retries=VALUE               # Number of times an example will be re-run should it fail, default: 0
   --help, -h                        # Print this help
 ```
@@ -140,6 +142,7 @@ Options:
   --key=VALUE, -k VALUE             # Authentication key clients must use for access. Overrides SPECWRK_SRV_KEY, default: ""
   --run=VALUE, -r VALUE             # The run identifier for this job execution. Overrides SPECWRK_RUN, default: "main"
   --timeout=VALUE, -t VALUE         # The amount of time to wait for the server to respond. Overrides SPECWRK_TIMEOUT, default: "5"
+  --network-retries=VALUE           # The number of times to retry in the event of a network failure. Overrides SPECWRK_NETWORK_RETRIES, default: "1"
   --help, -h                        # Print this help
 ```
 
