@@ -21,8 +21,8 @@ module Specwrk
 
           before_lock
 
-          worker[:first_seen_at] ||= Time.now.iso8601
-          worker[:last_seen_at] = Time.now.iso8601
+          worker.first_seen_at ||= Time.now
+          worker.last_seen_at = Time.now
 
           final_response = with_lock do
             started_at = metadata[:started_at] ||= Time.now.iso8601
@@ -109,13 +109,21 @@ module Specwrk
         end
 
         def worker
-          @worker ||= Store.new(ENV.fetch("SPECWRK_SRV_STORE_URI", "memory:///"), File.join(run_id, "workers", request.get_header("HTTP_X_SPECWRK_ID").to_s))
+          @worker ||= worker_store_for(worker_id)
+        end
+
+        def worker_id
+          request.get_header("HTTP_X_SPECWRK_ID").to_s
         end
 
         def worker_status
           return 0 if worker[:failed].nil? && completed.any? # worker starts after run has completed
 
           worker[:failed] || 1
+        end
+
+        def worker_store_for(id)
+          WorkerStore.new(ENV.fetch("SPECWRK_SRV_STORE_URI", "memory:///"), File.join(run_id, "workers", id))
         end
 
         def run_id

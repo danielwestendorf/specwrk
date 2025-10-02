@@ -43,7 +43,7 @@ RSpec.describe Specwrk::Web::Endpoints::CompleteAndPop do
 
     it { is_expected.to eq([200, {"content-type" => "application/json", "x-specwrk-status" => "0"}, [JSON.generate([{id: "a.rb:2", file_path: "a.rb", expected_run_time: 0.1}])]]) }
     it { expect { subject }.to change { pending.reload.length }.from(1).to(0) }
-    it { expect { subject }.to change { processing.reload["a.rb:2"] }.from(nil).to({completion_threshold: instance_of(Float), expected_run_time: 0.1, file_path: "a.rb", id: "a.rb:2"}) }
+    it { expect { subject }.to change { processing.reload["a.rb:2"] }.from(nil).to({expected_run_time: 0.1, file_path: "a.rb", id: "a.rb:2", worker_id: "foobar-0"}) }
   end
 
   context "no items in the processing queue, but completed queue has items" do
@@ -56,19 +56,23 @@ RSpec.describe Specwrk::Web::Endpoints::CompleteAndPop do
 
   context "no items in the pending queue, but something in the processing queue but none are expired" do
     let(:existing_processing_data) do
-      {"a.rb:2": {id: "a.rb:2", file_path: "a.rb", expected_run_time: 0.1}}
+      {"a.rb:2": {id: "a.rb:2", file_path: "a.rb", expected_run_time: 0.1, worker_id: other_worker_id}}
     end
+
+    before { other_worker.last_seen_at = Time.now - 19 }
 
     it { is_expected.to eq([404, {"content-type" => "text/plain", "x-specwrk-status" => "0"}, ["This is not the path you're looking for, 'ol chap..."]]) }
   end
 
-  context "no items in the pending queue, but something in the processing queue it is expired" do
+  context "no items in the pending queue, but something in the processing queue that is expired" do
     let(:existing_processing_data) do
-      {"a.rb:2": {id: "a.rb:2", file_path: "a.rb", expected_run_time: 0.1, completion_threshold: (Time.now - 1).to_i}}
+      {"a.rb:2": {id: "a.rb:2", file_path: "a.rb", expected_run_time: 0.1, worker_id: other_worker_id}}
     end
 
-    it { is_expected.to eq([200, {"content-type" => "application/json", "x-specwrk-status" => "0"}, [JSON.generate([existing_processing_data.values.first])]]) }
-    it { expect { subject }.to change { processing["a.rb:2"][:completion_threshold] } }
+    before { other_worker.last_seen_at = Time.now - 21 }
+
+    it { is_expected.to eq([200, {"content-type" => "application/json", "x-specwrk-status" => "0"}, [JSON.generate([existing_processing_data.values.first.merge(worker_id: worker_id)])]]) }
+    it { expect { subject }.to change { processing["a.rb:2"][:worker_id] } }
   end
 
   context "retries examples" do

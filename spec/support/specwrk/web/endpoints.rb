@@ -36,7 +36,8 @@ RSpec.shared_context "worker endpoint" do
   let(:pending) { Specwrk::PendingStore.new datastore_uri, "pending" }
   let(:processing) { Specwrk::Store.new datastore_uri, "processing" }
   let(:completed) { Specwrk::CompletedStore.new datastore_uri, "completed" }
-  let(:worker) { Specwrk::PendingStore.new datastore_uri, File.join("workers", worker_id.to_s) }
+  let(:worker) { Specwrk::WorkerStore.new datastore_uri, File.join("workers", worker_id.to_s) }
+  let(:other_worker) { Specwrk::WorkerStore.new datastore_uri, File.join("workers", other_worker_id.to_s) }
   let(:failure_counts) { Specwrk::Store.new datastore_uri, "failure_counts" }
 
   let(:existing_run_times_data) { {} }
@@ -47,7 +48,8 @@ RSpec.shared_context "worker endpoint" do
   let(:existing_failure_counts_data) { {} }
 
   let(:run_id) { "main" }
-  let(:worker_id) { :"foobar-0" }
+  let(:worker_id) { "foobar-0" }
+  let(:other_worker_id) { "foobar-1" }
   let(:datastore_uri) { "file://#{datastore_path}" }
   let(:datastore_path) { File.join(base_path, run_id) }
   let(:base_uri) { "file://#{base_path}" }
