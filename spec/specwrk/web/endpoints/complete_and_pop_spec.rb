@@ -43,7 +43,7 @@ RSpec.describe Specwrk::Web::Endpoints::CompleteAndPop do
 
     it { is_expected.to eq([200, {"content-type" => "application/json", "x-specwrk-status" => "0"}, [JSON.generate([{id: "a.rb:2", file_path: "a.rb", expected_run_time: 0.1}])]]) }
     it { expect { subject }.to change { pending.reload.length }.from(1).to(0) }
-    it { expect { subject }.to change { processing.reload["a.rb:2"] }.from(nil).to({expected_run_time: 0.1, file_path: "a.rb", id: "a.rb:2", worker_id: "foobar-0"}) }
+    it { expect { subject }.to change { processing.reload["a.rb:2"] }.from(nil).to({expected_run_time: 0.1, file_path: "a.rb", id: "a.rb:2", worker_id: "foobar-0", processing_started_at: instance_of(Integer)}) }
   end
 
   context "no items in the processing queue, but completed queue has items" do
@@ -56,7 +56,7 @@ RSpec.describe Specwrk::Web::Endpoints::CompleteAndPop do
 
   context "no items in the pending queue, but something in the processing queue but none are expired" do
     let(:existing_processing_data) do
-      {"a.rb:2": {id: "a.rb:2", file_path: "a.rb", expected_run_time: 0.1, worker_id: other_worker_id}}
+      {"a.rb:2": {id: "a.rb:2", file_path: "a.rb", expected_run_time: 0.1, processing_started_at: (Time.now - 100).to_i, worker_id: other_worker_id}}
     end
 
     before { other_worker.last_seen_at = Time.now - 19 }
@@ -66,7 +66,7 @@ RSpec.describe Specwrk::Web::Endpoints::CompleteAndPop do
 
   context "no items in the pending queue, but something in the processing queue that is expired" do
     let(:existing_processing_data) do
-      {"a.rb:2": {id: "a.rb:2", file_path: "a.rb", expected_run_time: 0.1, worker_id: other_worker_id}}
+      {"a.rb:2": {id: "a.rb:2", file_path: "a.rb", expected_run_time: 0.1, processing_started_at: (Time.now - 100).to_i, worker_id: other_worker_id}}
     end
 
     before { other_worker.last_seen_at = Time.now - 21 }

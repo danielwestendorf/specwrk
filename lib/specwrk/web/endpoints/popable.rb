@@ -32,7 +32,7 @@ module Specwrk
 
             processing_data = examples.map do |example|
               [
-                example[:id], example.merge(worker_id: worker_id)
+                example[:id], example.merge(worker_id: worker_id, processing_started_at: Time.now.to_i)
               ]
             end
 
@@ -51,6 +51,8 @@ module Specwrk
         # Has the worker missed two heartbeat check-ins?
         def expired?(example)
           return false unless example[:worker_id]
+          return false unless example[:processing_started_at]
+          return false unless example[:processing_started_at] < (Time.now - 20).to_i
 
           workers_last_heartbeats[example[:worker_id]] < Time.now - 20
         end
