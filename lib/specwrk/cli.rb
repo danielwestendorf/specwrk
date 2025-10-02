@@ -20,13 +20,15 @@ module Specwrk
         base.unique_option :key, type: :string, default: ENV.fetch("SPECWRK_SRV_KEY", ""), aliases: ["-k"], desc: "Authentication key clients must use for access. Overrides SPECWRK_SRV_KEY"
         base.unique_option :run, type: :string, default: ENV.fetch("SPECWRK_RUN", "main"), aliases: ["-r"], desc: "The run identifier for this job execution. Overrides SPECWRK_RUN"
         base.unique_option :timeout, type: :integer, default: ENV.fetch("SPECWRK_TIMEOUT", "5"), aliases: ["-t"], desc: "The amount of time to wait for the server to respond. Overrides SPECWRK_TIMEOUT"
+        base.unique_option :network_retries, type: :integer, default: ENV.fetch("SPECWRK_NETWORK_RETRIES", "1"), desc: "The number of times to retry in the event of a network failure. Overrides SPECWRK_NETWORK_RETRIES"
       end
 
-      on_setup do |uri:, key:, run:, timeout:, **|
+      on_setup do |uri:, key:, run:, timeout:, network_retries:, **|
         ENV["SPECWRK_SRV_URI"] = uri
         ENV["SPECWRK_SRV_KEY"] = key
         ENV["SPECWRK_RUN"] = run
         ENV["SPECWRK_TIMEOUT"] = timeout
+        ENV["SPECWRK_NETWORK_RETRIES"] = network_retries
       end
     end
 

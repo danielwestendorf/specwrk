@@ -115,16 +115,6 @@ module Specwrk
       else
         raise UnhandledResponseError.new("#{response.code}: #{response.body}")
       end
-    rescue Net::OpenTimeout, Net::ReadTimeout, Net::WriteTimeout => e
-      @retry_count ||= 0
-      @retry_count += 1
-
-      raise e if @retry_count == 5
-
-      warn e
-      sleep @retry_count
-
-      retry
     end
 
     def seed(examples, max_retries)
@@ -172,6 +162,16 @@ module Specwrk
           @worker_status = response["x-specwrk-status"].to_i if response["x-specwrk-status"]
         end
       end
+    rescue Net::ReadTimeout, Net::WriteTimeout => e
+      @retry_count ||= 0
+
+      raise e if @retry_count == ENV["SPECWRK_NETWORK_RETRIES"].to_i
+      @retry_count += 1
+
+      warn e
+      sleep @retry_count
+
+      retry
     end
 
     def default_headers
