@@ -105,6 +105,47 @@ module Specwrk
     end
   end
 
+  class WorkerStore < Store
+    FIRST_SEEN_AT_KEY = :____first_seen_at_key
+    LAST_SEEN_AT_KEY = :____last_seen_at_key
+
+    def first_seen_at=(val)
+      @first_seen_at = nil
+
+      self[FIRST_SEEN_AT_KEY] = val.to_i
+    end
+
+    def first_seen_at
+      @first_seen_at ||= begin
+        value = self[FIRST_SEEN_AT_KEY]
+        return @first_seen_at = value unless value
+
+        @first_seen_at = Time.at(value.to_i)
+      end
+    end
+
+    def last_seen_at=(val)
+      @last_seen_at = nil
+
+      self[LAST_SEEN_AT_KEY] = val.to_i
+    end
+
+    def last_seen_at
+      @last_seen_at ||= begin
+        value = self[LAST_SEEN_AT_KEY]
+        return @last_seen_at = value unless value
+
+        @last_seen_at = Time.at(value.to_i)
+      end
+    end
+
+    def reload
+      @last_seen_at = nil
+      @first_seen_at = nil
+      super
+    end
+  end
+
   class PendingStore < Store
     RUN_TIME_BUCKET_MAXIMUM_KEY = :____run_time_bucket_maximum
     ORDER_KEY = :____order
@@ -234,22 +275,6 @@ module Specwrk
   end
 
   class ProcessingStore < Store
-    def expired
-      @expired ||= begin
-        bucket = []
-
-        keys.each_slice(24).each do |key_group|
-          examples = multi_read(*key_group)
-          examples.each do |id, example|
-            next if example[:completion_threshold].nil?
-
-            bucket << [id, example] if example[:completion_threshold] < Time.now.to_i
-          end
-        end
-
-        bucket.to_h
-      end
-    end
   end
 
   class CompletedStore < Store

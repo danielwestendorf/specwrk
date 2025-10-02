@@ -122,6 +122,47 @@ RSpec.describe Specwrk::Store do
   end
 end
 
+RSpec.describe Specwrk::WorkerStore do
+  let(:uri_string) { "file://#{Dir.tmpdir}" }
+  let(:scope) { SecureRandom.uuid }
+
+  let(:instance) { described_class.new(uri_string, scope) }
+  let!(:time) { Time.now.round(0) }
+
+  before do
+    instance.clear
+    allow(Time).to receive(:now).and_return(time)
+  end
+
+  describe "#first_seen_at=" do
+    subject { instance.first_seen_at = time - 100 }
+
+    it { expect { subject }.to change(instance, :first_seen_at).from(nil).to(time - 100) }
+  end
+
+  describe "#first_seen_at" do
+    subject { instance.first_seen_at }
+
+    before { instance[described_class::FIRST_SEEN_AT_KEY] = 812 }
+
+    it { is_expected.to eq(Time.at(812)) }
+  end
+
+  describe "#last_seen_at=" do
+    subject { instance.last_seen_at = time - 100 }
+
+    it { expect { subject }.to change(instance, :last_seen_at).from(nil).to(time - 100) }
+  end
+
+  describe "#last_seen_at" do
+    subject { instance.last_seen_at }
+
+    before { instance[described_class::LAST_SEEN_AT_KEY] = 812 }
+
+    it { is_expected.to eq(Time.at(812)) }
+  end
+end
+
 RSpec.describe Specwrk::PendingStore do
   let(:uri_string) { "file://#{Dir.tmpdir}" }
   let(:scope) { SecureRandom.uuid }
@@ -306,31 +347,8 @@ RSpec.describe Specwrk::PendingStore do
     end
   end
 end
+
 RSpec.describe Specwrk::ProcessingStore do
-  let(:uri_string) { "file://#{Dir.tmpdir}" }
-  let(:scope) { SecureRandom.uuid }
-
-  let(:instance) { described_class.new(uri_string, scope) }
-
-  before { instance.clear }
-
-  describe "#expired" do
-    subject { instance.expired }
-
-    before do
-      allow(Time).to receive(:now).and_return(Time.at(1_000_000))
-
-      instance.merge!(
-        "past_item" => {completion_threshold: 500},
-        "exact_now_item" => {completion_threshold: 1_000_000},
-        "future_item" => {completion_threshold: 1_500_000},
-        "no_threshold" => {some_other_key: "foo"}
-      )
-    end
-
-    it { is_expected.to have_key("past_item") }
-    it { is_expected.not_to have_key("no_threshold") }
-  end
 end
 
 RSpec.describe Specwrk::CompletedStore do
