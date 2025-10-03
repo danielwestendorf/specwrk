@@ -70,6 +70,7 @@ module Specwrk
 
     def execute
       executor.run next_examples
+      next_examples.clear
       complete_examples
     rescue UnhandledResponseError => e
       # If fetching examples via next_exampels fails we can just try again so warn and return

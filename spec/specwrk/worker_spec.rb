@@ -223,6 +223,7 @@ RSpec.describe Specwrk::Worker do
         .with(client.fetch_examples)
 
       expect(instance).to receive(:complete_examples)
+      expect(instance.next_examples).to receive(:clear)
 
       instance.execute
     end
