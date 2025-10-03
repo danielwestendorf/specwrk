@@ -98,7 +98,7 @@ module Specwrk
         sleep 10
 
         begin
-          client.heartbeat if client.last_request_at.nil? || client.last_request_at < Time.now - 30
+          client.heartbeat if client.last_request_at.nil? || client.last_request_at < Time.now - 9
         rescue
           warn "Heartbeat failed!"
         end
