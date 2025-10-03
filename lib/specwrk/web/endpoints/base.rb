@@ -8,6 +8,8 @@ module Specwrk
   class Web
     module Endpoints
       class Base
+        MUTEX = Mutex.new
+
         attr_reader :started_at
 
         def initialize(request)
@@ -134,7 +136,17 @@ module Specwrk
           if skip_lock
             yield
           else
-            Store.with_lock(URI(ENV.fetch("SPECWRK_SRV_STORE_URI", "memory:///")), run_id) { yield }
+            with_mutex do
+              Store.with_lock(URI(ENV.fetch("SPECWRK_SRV_STORE_URI", "memory:///")), run_id) { yield }
+            end
+          end
+        end
+
+        def with_mutex
+          if Thread.current == Thread.main
+            yield
+          else
+            MUTEX.synchronize { yield }
           end
         end
       end
