@@ -3,7 +3,7 @@
 require "specwrk/worker"
 
 RSpec.describe Specwrk::Worker do
-  let(:client) { instance_double(Specwrk::Client, close: true, fetch_examples: %w[a.rb:1 b.rb:2]) }
+  let(:client) { instance_double(Specwrk::Client, close: true) }
   let(:tempfile) { instance_double(Tempfile, rewind: true) }
   let(:thread) { instance_double(Thread, kill: true) }
 
@@ -18,6 +18,8 @@ RSpec.describe Specwrk::Worker do
   before do
     allow(Specwrk::Client).to receive(:new)
       .and_return(client)
+
+    allow(client).to receive(:fetch_examples) { %w[a.rb:1 b.rb:2].dup }
 
     allow(Specwrk::Worker::Executor).to receive(:new)
       .and_return(executor)
@@ -224,7 +226,7 @@ RSpec.describe Specwrk::Worker do
 
       expect(instance).to receive(:complete_examples)
 
-      instance.execute
+      expect { instance.execute }.to change { instance.next_examples.object_id }
     end
 
     it "warns when an unhandled error is raised" do
