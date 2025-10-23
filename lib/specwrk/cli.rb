@@ -253,9 +253,11 @@ module Specwrk
           Client.new.seed(examples, max_retries)
           file_count = examples.group_by { |e| e[:file_path] }.keys.size
           status "🌱 Seeded #{examples.size} examples across #{file_count} files"
+          exit(1) if examples.size.zero?
         end
 
         if Specwrk.wait_for_pids_exit([seed_pid]).value?(1)
+          status "Seeding examples failed, exiting."
           Process.kill("INT", web_pid)
           exit(1)
         end
