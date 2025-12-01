@@ -34,6 +34,25 @@ RSpec.describe Specwrk::Web::Logger do
     it { expect { subject }.to change(out, :string).to("127.0.0.1 [#{time.iso8601(6)}] GET /test → 200 (123.456ms)\n") }
   end
 
+  context "logs method, path, worker id, run id, status and duration in ms to the given output" do
+    let(:env) do
+      {
+        "REQUEST_METHOD" => "GET",
+        "PATH_INFO" => "/test",
+        "REMOTE_ADDR" => "127.0.0.1",
+        "HTTP_X_SPECWRK_RUN" => "run-1",
+        "HTTP_X_SPECWRK_ID" => "worker-1"
+      }
+    end
+
+    it { is_expected.to eq([status, headers, body]) }
+
+    it do
+      expect { subject }.to change(out, :string)
+        .to("127.0.0.1 [#{time.iso8601(6)}] GET /test run-1 worker-1 → 200 (123.456ms)\n")
+    end
+  end
+
   context "does not log method, path, status and duration in ms to the given output" do
     let(:env) { {"REQUEST_METHOD" => "GET", "PATH_INFO" => "/noise", "REMOTE_ADDR" => "127.0.0.1"} }
 
