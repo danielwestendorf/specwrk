@@ -18,7 +18,10 @@ module Specwrk
         dur_ms = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - start) * 1000).round(4)
 
         remote = env["REMOTE_ADDR"] || env["REMOTE_HOST"] || "-"
-        @out.puts "#{remote} [#{start_time.iso8601(6)}] #{env["REQUEST_METHOD"]} #{env["PATH_INFO"]} → #{status} (#{dur_ms}ms)"
+        worker_parts = [env["HTTP_X_SPECWRK_RUN"], env["HTTP_X_SPECWRK_ID"]].compact
+        context = " #{worker_parts.join(" ")}" unless worker_parts.empty?
+
+        @out.puts "#{remote} [#{start_time.iso8601(6)}] #{env["REQUEST_METHOD"]} #{env["PATH_INFO"]}#{context} → #{status} (#{dur_ms}ms)"
         [status, headers, body]
       end
     end
