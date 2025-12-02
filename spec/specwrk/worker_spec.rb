@@ -21,6 +21,8 @@ RSpec.describe Specwrk::Worker do
 
     allow(client).to receive(:fetch_examples) { %w[a.rb:1 b.rb:2].dup }
 
+    allow(executor).to receive(:flush_log)
+
     allow(Specwrk::Worker::Executor).to receive(:new)
       .and_return(executor)
 
