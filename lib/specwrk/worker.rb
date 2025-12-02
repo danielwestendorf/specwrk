@@ -54,6 +54,7 @@ module Specwrk
         end
       end
 
+      executor.flush_log
       executor.final_output.tap(&:rewind).each_line { |line| final_output.write line }
 
       @heartbeat_thread.kill
