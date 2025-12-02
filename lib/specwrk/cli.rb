@@ -94,7 +94,7 @@ module Specwrk
         base.unique_option :key, type: :string, aliases: ["-k"], default: ENV.fetch("SPECWRK_SRV_KEY", ""), desc: "Authentication key clients must use for access. Overrides SPECWRK_SRV_KEY"
         base.unique_option :output, type: :string, default: ENV.fetch("SPECWRK_OUT", ".specwrk/"), aliases: ["-o"], desc: "Directory where worker or server output is stored. Overrides SPECWRK_OUT"
         base.unique_option :store_uri, type: :string, desc: "Directory where server state is stored. Required for multi-node or multi-process servers."
-        base.unique_option :group_by, values: %w[file timings], default: ENV.fetch("SPECWERK_SRV_GROUP_BY", "timings"), desc: "How examples will be grouped for workers; fallback to file if no timings are found. Overrides SPECWERK_SRV_GROUP_BY"
+        base.unique_option :group_by, values: %w[file timings], default: ENV.fetch("SPECWRK_SRV_GROUP_BY", "timings"), desc: "How examples will be grouped for workers; fallback to file if no timings are found. Overrides SPECWRK_SRV_GROUP_BY"
         base.unique_option :verbose, type: :boolean, default: false, desc: "Run in verbose mode"
       end
 
