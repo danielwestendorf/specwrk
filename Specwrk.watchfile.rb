@@ -16,7 +16,7 @@ end
 #   path.gsub(/app\/models\/(.+)\.rb/, "spec/models/\\1_spec.rb")
 # end
 #
-# If a controlelr file changes (assuming rails app structure), run the controller and system specs file
+# If a controller file changes (assuming rails app structure), run the controller and system specs file
 # map(/app\/controllers\/.*.rb$/) do |path|
 #   [
 #     path.gsub(/app\/controllers\/(.+)\.rb/, "spec/controllers/\\1_spec.rb"),
