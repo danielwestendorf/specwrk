@@ -3,9 +3,9 @@
 require "securerandom"
 require "tmpdir"
 
-require "specwrk/store/bucket"
+require "specwrk/store/bucket_store"
 
-RSpec.describe Specwrk::Bucket do
+RSpec.describe Specwrk::BucketStore do
   let(:uri_string) { "file://#{Dir.tmpdir}" }
   let(:scope) { SecureRandom.uuid }
 
