@@ -3,7 +3,7 @@
 require "specwrk/store/base"
 
 module Specwrk
-  class Bucket < Store
+  class BucketStore < Store
     EXAMPLES_KEY = :____examples
 
     def examples=(val)
@@ -30,4 +30,7 @@ module Specwrk
       super
     end
   end
+
+  # Backward compatibility until all callers are migrated
+  Bucket = BucketStore
 end
