@@ -71,8 +71,13 @@ RSpec.describe Specwrk::Web::Endpoints::CompleteAndPop do
 
     before { other_worker.last_seen_at = Time.now - 21 }
 
-    it { is_expected.to eq([200, {"content-type" => "application/json", "x-specwrk-status" => "0"}, [JSON.generate([existing_processing_data.values.first.merge(worker_id: worker_id)])]]) }
-    it { expect { subject }.to change { processing["a.rb:2"][:worker_id] } }
+    it "requeues the expired example into a new pending bucket" do
+      expect { subject }.to change { processing["a.rb:2"][:worker_id] }
+
+      expect(response[0]).to eq(200)
+      body_examples = JSON.parse(response[2].first, symbolize_names: true)
+      expect(body_examples.map { |ex| ex[:id] }).to eq(["a.rb:2"])
+    end
   end
 
   context "retries examples" do

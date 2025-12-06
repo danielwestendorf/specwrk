@@ -13,7 +13,18 @@ RSpec.describe Specwrk::Web::Endpoints::Seed do
     let(:existing_pending_data) { {"b.rb:2" => {id: "b.rb:2", file_path: "b.rb", expected_run_time: 0.1}} }
 
     it { is_expected.to eq(ok) }
-    it { expect { subject }.to change(pending, :inspect).from("b.rb:2": instance_of(Hash)).to("a.rb:1": instance_of(Hash)) }
+    it "replaces pending buckets with the seeded examples" do
+      original_bucket_ids = pending.bucket_ids.dup
+
+      subject
+
+      expect(pending.reload.length).to eq(1)
+
+      bucket_id = pending.shift_bucket
+      expect(bucket_id).to be_a(String)
+      expect(original_bucket_ids).not_to include(bucket_id)
+      expect(Specwrk::BucketStore.new(datastore_uri, File.join("pending", "buckets", bucket_id)).examples.map { |ex| ex[:id] }).to eq(["a.rb:1"])
+    end
     it { expect { subject }.to change { pending.reload.max_retries }.from(0).to(42) }
   end
 
@@ -26,7 +37,16 @@ RSpec.describe Specwrk::Web::Endpoints::Seed do
       ])
     end
 
-    it { expect { subject }.to change { pending.reload.keys }.from([]).to(%w[a.rb:1 a.rb:2 b.rb:1]) }
+    it "creates buckets grouped by file path" do
+      subject
+
+      first_bucket_id = pending.shift_bucket
+      second_bucket_id = pending.shift_bucket
+
+      expect(Specwrk::BucketStore.new(datastore_uri, File.join("pending", "buckets", first_bucket_id)).examples.map { |ex| ex[:id] }).to eq(%w[a.rb:1 a.rb:2])
+      expect(Specwrk::BucketStore.new(datastore_uri, File.join("pending", "buckets", second_bucket_id)).examples.map { |ex| ex[:id] }).to eq(%w[b.rb:1])
+      expect(pending.shift_bucket).to be_nil
+    end
   end
 
   context "merged with run_time_bucket_maximum sorted by timings" do
@@ -47,7 +67,19 @@ RSpec.describe Specwrk::Web::Endpoints::Seed do
       ])
     end
 
-    it { expect { subject }.to change { pending.reload.keys }.from([]).to(%w[b.rb:3 b.rb:4 a.rb:2 a.rb:1]) }
     it { expect { subject }.to change { pending.reload.run_time_bucket_maximum }.from(nil).to(0.7) }
+
+    it "creates buckets grouped by expected run time" do
+      subject
+
+      first_bucket_id = pending.shift_bucket
+      second_bucket_id = pending.shift_bucket
+      third_bucket_id = pending.shift_bucket
+
+      expect(Specwrk::BucketStore.new(datastore_uri, File.join("pending", "buckets", first_bucket_id)).examples.map { |ex| ex[:id] }).to eq(%w[b.rb:3])
+      expect(Specwrk::BucketStore.new(datastore_uri, File.join("pending", "buckets", second_bucket_id)).examples.map { |ex| ex[:id] }).to eq(%w[b.rb:4])
+      expect(Specwrk::BucketStore.new(datastore_uri, File.join("pending", "buckets", third_bucket_id)).examples.map { |ex| ex[:id] }).to eq(%w[a.rb:2 a.rb:1])
+      expect(pending.shift_bucket).to be_nil
+    end
   end
 end
