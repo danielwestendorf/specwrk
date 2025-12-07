@@ -17,8 +17,12 @@ module Specwrk
             [410, {"content-type" => "text/plain"}, ["That's a good lad. Run along now and go home."]]
           elsif expired_examples.length.positive?
             expired_examples.each { |_id, example| example[:worker_id] = worker_id }
-            with_lock { pending.push_examples(expired_examples.values) }
-            processing.delete(*expired_examples.keys.map(&:to_s))
+
+            with_lock do
+              pending.push_examples(expired_examples.values)
+              processing.delete(*expired_examples.keys.map(&:to_s))
+            end
+
             @examples = nil
 
             [200, {"content-type" => "application/json"}, [JSON.generate(examples)]]
@@ -29,6 +33,7 @@ module Specwrk
 
         def examples
           @examples ||= begin
+            return [] if pending.empty?
             bucket_id = with_lock { pending.shift_bucket }
             return [] if bucket_id.nil?
 
