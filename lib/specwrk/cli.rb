@@ -2,6 +2,7 @@
 
 require "pathname"
 require "securerandom"
+require "json"
 
 require "dry/cli"
 
@@ -11,6 +12,78 @@ require "specwrk/hookable"
 module Specwrk
   module CLI
     extend Dry::CLI::Registry
+
+    module WorkerProcesses
+      WORKER_INIT_SCRIPT = <<~RUBY
+        writer = IO.for_fd(Integer(ENV.fetch("SPECWRK_FINAL_FD")))
+        $final_output = writer # standard:disable Style/GlobalVars
+        $final_output.sync = true # standard:disable Style/GlobalVars
+        $stdout.sync = true
+        $stderr.sync = true
+
+        require "specwrk/worker"
+
+        trap("INT") do
+          RSpec.world.wants_to_quit = true if defined?(RSpec)
+          exit(1) if Specwrk.force_quit
+          Specwrk.force_quit = true
+        end
+
+        status = Specwrk::Worker.run!
+        $final_output.close # standard:disable Style/GlobalVars
+        exit(status)
+      RUBY
+
+      def start_workers
+        @final_outputs = []
+        @worker_pids = worker_count.times.map do |i|
+          reader, writer = IO.pipe
+          @final_outputs << reader
+
+          env = worker_env_for(i + 1).merge(
+            "SPECWRK_FINAL_FD" => writer.fileno.to_s
+          )
+
+          Process.spawn(
+            env, RbConfig.ruby, "-e", WORKER_INIT_SCRIPT,
+            writer.fileno => writer,
+            :in => :close,
+            :close_others => false
+          ).tap { writer.close }
+        end
+      end
+
+      def drain_outputs
+        @final_outputs.each do |reader|
+          reader.each_line { |line| $stdout.print line }
+          reader.close
+        end
+      end
+
+      def worker_count
+        @worker_count ||= [1, ENV["SPECWRK_COUNT"].to_i].max
+      end
+
+      def worker_env_for(idx)
+        {
+          "TEST_ENV_NUMBER" => idx.to_s,
+          "SPECWRK_FORKED" => idx.to_s,
+          "SPECWRK_ID" => "#{ENV.fetch("SPECWRK_ID", "specwrk-worker")}-#{idx}"
+        }
+      end
+    end
+
+    module PortDiscoverable
+      def find_open_port
+        require "socket"
+
+        server = TCPServer.new("127.0.0.1", 0)
+        port = server.addr[1]
+        server.close
+
+        port
+      end
+    end
 
     module Clientable
       extend Hookable
@@ -34,6 +107,7 @@ module Specwrk
 
     module Workable
       extend Hookable
+      include WorkerProcesses
 
       on_included do |base|
         base.unique_option :id, type: :string, desc: "The identifier for this worker. Overrides SPECWRK_ID. If none provided one in the format of specwrk-worker-8_RAND_CHARS-COUNT_INDEX will be used"
@@ -49,44 +123,11 @@ module Specwrk
         ENV["SPECWRK_SEED_WAITS"] = seed_waits.to_s
         ENV["SPECWRK_OUT"] = Pathname.new(output).expand_path(Dir.pwd).to_s
       end
-
-      def start_workers
-        @final_outputs = []
-        @worker_pids = worker_count.times.map do |i|
-          reader, writer = IO.pipe
-          @final_outputs << reader
-
-          Process.fork do
-            ENV["TEST_ENV_NUMBER"] = ENV["SPECWRK_FORKED"] = (i + 1).to_s
-            ENV["SPECWRK_ID"] = ENV["SPECWRK_ID"] + "-#{i + 1}"
-
-            $final_output = writer # standard:disable Style/GlobalVars
-            $final_output.sync = true # standard:disable Style/GlobalVars
-            reader.close
-
-            require "specwrk/worker"
-
-            status = Specwrk::Worker.run!
-            $final_output.close # standard:disable Style/GlobalVars
-            exit(status)
-          end.tap { writer.close }
-        end
-      end
-
-      def drain_outputs
-        @final_outputs.each do |reader|
-          reader.each_line { |line| $stdout.print line }
-          reader.close
-        end
-      end
-
-      def worker_count
-        @worker_count ||= [1, ENV["SPECWRK_COUNT"].to_i].max
-      end
     end
 
     module Servable
       extend Hookable
+      include PortDiscoverable
 
       on_included do |base|
         base.unique_option :port, type: :integer, default: ENV.fetch("SPECWRK_SRV_PORT", "5138"), aliases: ["-p"], desc: "Server port. Overrides SPECWRK_SRV_PORT"
@@ -107,16 +148,6 @@ module Specwrk
         ENV["SPECWRK_SRV_BIND"] = bind
         ENV["SPECWRK_SRV_KEY"] = key
         ENV["SPECWRK_SRV_GROUP_BY"] = group_by
-      end
-
-      def find_open_port
-        require "socket"
-
-        server = TCPServer.new("127.0.0.1", 0)
-        port = server.addr[1]
-        server.close
-
-        port
       end
     end
 
@@ -210,6 +241,31 @@ module Specwrk
       include Workable
       include Servable
 
+      SEED_INIT_SCRIPT = <<~'RUBY'
+        require "json"
+        require "specwrk/list_examples"
+        require "specwrk/client"
+
+        def status(msg)
+          print "\e[2K\r#{msg}"
+          $stdout.flush
+        end
+
+        dir = JSON.parse(ENV.fetch("SPECWRK_SEED_DIRS"))
+        max_retries = Integer(ENV.fetch("SPECWRK_MAX_RETRIES", "0"))
+
+        examples = Specwrk::ListExamples.new(dir).examples
+
+        status "Waiting for server to respond..."
+        Specwrk::Client.wait_for_server!
+        status "Server responding ✓"
+        status "Seeding #{examples.length} examples..."
+        Specwrk::Client.new.seed(examples, max_retries)
+        file_count = examples.group_by { |e| e[:file_path] }.keys.size
+        status "🌱 Seeded #{examples.size} examples across #{file_count} files"
+        exit(1) if examples.size.zero?
+      RUBY
+
       desc "Start a server and workers, monitor until complete"
       option :max_retries, default: 0, desc: "Number of times an example will be re-run should it fail"
       argument :dir, type: :array, required: false, desc: "Relative spec directory to run against, default: spec/"
@@ -238,23 +294,7 @@ module Specwrk
         end
 
         return if Specwrk.force_quit
-        seed_pid = Process.fork do
-          require "specwrk/list_examples"
-          require "specwrk/client"
-
-          ENV["SPECWRK_FORKED"] = "1"
-          ENV["SPECWRK_SEED"] = "1"
-          examples = ListExamples.new(dir).examples
-
-          status "Waiting for server to respond..."
-          Client.wait_for_server!
-          status "Server responding ✓"
-          status "Seeding #{examples.length} examples..."
-          Client.new.seed(examples, max_retries)
-          file_count = examples.group_by { |e| e[:file_path] }.keys.size
-          status "🌱 Seeded #{examples.size} examples across #{file_count} files"
-          exit(1) if examples.size.zero?
-        end
+        seed_pid = spawn_seed_process(dir, max_retries)
 
         if Specwrk.wait_for_pids_exit([seed_pid]).value?(1)
           status "Seeding examples failed, exiting."
@@ -279,6 +319,19 @@ module Specwrk
         exit(status)
       end
 
+      def spawn_seed_process(dir, max_retries)
+        Process.spawn(
+          {
+            "SPECWRK_FORKED" => "1",
+            "SPECWRK_SEED" => "1",
+            "SPECWRK_SEED_DIRS" => JSON.dump(dir),
+            "SPECWRK_MAX_RETRIES" => max_retries.to_s
+          },
+          RbConfig.ruby, "-e", SEED_INIT_SCRIPT,
+          close_others: false
+        )
+      end
+
       def status(msg)
         print "\e[2K\r#{msg}"
         $stdout.flush
@@ -286,6 +339,20 @@ module Specwrk
     end
 
     class Watch < Dry::CLI::Command
+      include WorkerProcesses
+      include PortDiscoverable
+
+      SEED_LOOP_INIT_SCRIPT = <<~RUBY
+        require "specwrk/ipc"
+        require "specwrk/seed_loop"
+
+        parent_pid = Integer(ENV.fetch("SPECWRK_IPC_PARENT_PID"))
+        fd = Integer(ENV.fetch("SPECWRK_IPC_FD"))
+        ipc = Specwrk::IPC.from_child_fd(fd, parent_pid: parent_pid)
+
+        Specwrk::SeedLoop.loop!(ipc)
+      RUBY
+
       desc "Start a server and workers, watch for file changes in the current directory, and execute specs"
       option :watchfile, type: :string, default: "Specwrk.watchfile.rb", desc: "Path to watchfile configuration"
       option :count, type: :integer, default: 1, aliases: ["-c"], desc: "The number of worker processes you want to start"
@@ -388,14 +455,19 @@ module Specwrk
         @seed_pid ||= begin
           ipc # must be initialized in the parent process
 
-          @seed_pid = Process.fork do
-            require "specwrk/seed_loop"
+          ipc.child_socket.close_on_exec = false
 
-            ENV["SPECWRK_FORKED"] = "1"
-            ENV["SPECWRK_SEED"] = "1"
-
-            Specwrk::SeedLoop.loop!(ipc)
-          end
+          Process.spawn(
+            {
+              "SPECWRK_FORKED" => "1",
+              "SPECWRK_SEED" => "1",
+              "SPECWRK_IPC_FD" => ipc.child_socket.fileno.to_s,
+              "SPECWRK_IPC_PARENT_PID" => Process.pid.to_s
+            },
+            RbConfig.ruby, "-e", SEED_LOOP_INIT_SCRIPT,
+            ipc.child_socket => ipc.child_socket,
+            :close_others => false
+          )
         end
       end
 
@@ -420,50 +492,6 @@ module Specwrk
       def status(msg)
         print "\e[2K\r#{msg}"
         $stdout.flush
-      end
-
-      def start_workers
-        @final_outputs = []
-        @worker_pids = worker_count.times.map do |i|
-          reader, writer = IO.pipe
-          @final_outputs << reader
-
-          Process.fork do
-            ENV["TEST_ENV_NUMBER"] = ENV["SPECWRK_FORKED"] = (i + 1).to_s
-            ENV["SPECWRK_ID"] = "specwrk-worker-#{i + 1}"
-
-            $final_output = writer # standard:disable Style/GlobalVars
-            $final_output.sync = true # standard:disable Style/GlobalVars
-            reader.close
-
-            require "specwrk/worker"
-
-            status = Specwrk::Worker.run!
-            $final_output.close # standard:disable Style/GlobalVars
-            exit(status)
-          end.tap { writer.close }
-        end
-      end
-
-      def drain_outputs
-        @final_outputs.each do |reader|
-          reader.each_line { |line| $stdout.print line }
-          reader.close
-        end
-      end
-
-      def worker_count
-        @worker_count ||= [1, ENV["SPECWRK_COUNT"].to_i].max
-      end
-
-      def find_open_port
-        require "socket"
-
-        server = TCPServer.new("127.0.0.1", 0)
-        port = server.addr[1]
-        server.close
-
-        port
       end
     end
 
