@@ -12,29 +12,7 @@ module Specwrk
   module CLI
     extend Dry::CLI::Registry
 
-    module Clientable
-      extend Hookable
-
-      on_included do |base|
-        base.unique_option :uri, type: :string, default: ENV.fetch("SPECWRK_SRV_URI", "http://localhost:#{ENV.fetch("SPECWRK_SRV_PORT", "5138")}"), desc: "HTTP URI of the server to pull jobs from. Overrides SPECWRK_SRV_URI"
-        base.unique_option :key, type: :string, default: ENV.fetch("SPECWRK_SRV_KEY", ""), aliases: ["-k"], desc: "Authentication key clients must use for access. Overrides SPECWRK_SRV_KEY"
-        base.unique_option :run, type: :string, default: ENV.fetch("SPECWRK_RUN", "main"), aliases: ["-r"], desc: "The run identifier for this job execution. Overrides SPECWRK_RUN"
-        base.unique_option :timeout, type: :integer, default: ENV.fetch("SPECWRK_TIMEOUT", "5"), aliases: ["-t"], desc: "The amount of time to wait for the server to respond. Overrides SPECWRK_TIMEOUT"
-        base.unique_option :network_retries, type: :integer, default: ENV.fetch("SPECWRK_NETWORK_RETRIES", "1"), desc: "The number of times to retry in the event of a network failure. Overrides SPECWRK_NETWORK_RETRIES"
-      end
-
-      on_setup do |uri:, key:, run:, timeout:, network_retries:, **|
-        ENV["SPECWRK_SRV_URI"] = uri
-        ENV["SPECWRK_SRV_KEY"] = key
-        ENV["SPECWRK_RUN"] = run
-        ENV["SPECWRK_TIMEOUT"] = timeout
-        ENV["SPECWRK_NETWORK_RETRIES"] = network_retries
-      end
-    end
-
-    module Workable
-      extend Hookable
-
+    module WorkerProcesses
       WORKER_INIT_SCRIPT = <<~RUBY
         writer = IO.for_fd(Integer(ENV.fetch("SPECWRK_FINAL_FD")))
         $final_output = writer # standard:disable Style/GlobalVars
@@ -54,21 +32,6 @@ module Specwrk
         $final_output.close # standard:disable Style/GlobalVars
         exit(status)
       RUBY
-
-      on_included do |base|
-        base.unique_option :id, type: :string, desc: "The identifier for this worker. Overrides SPECWRK_ID. If none provided one in the format of specwrk-worker-8_RAND_CHARS-COUNT_INDEX will be used"
-        base.unique_option :count, type: :integer, default: 1, aliases: ["-c"], desc: "The number of worker processes you want to start"
-        base.unique_option :output, type: :string, default: ENV.fetch("SPECWRK_OUT", ".specwrk/"), aliases: ["-o"], desc: "Directory where worker output is stored. Overrides SPECWRK_OUT"
-        base.unique_option :seed_waits, type: :integer, default: ENV.fetch("SPECWRK_SEED_WAITS", "10"), aliases: ["-w"], desc: "Number of times the worker will wait for examples to be seeded to the server. 1sec between attempts. Overrides SPECWRK_SEED_WAITS"
-      end
-
-      on_setup do |count:, output:, seed_waits:, id: "specwrk-worker-#{SecureRandom.uuid[0, 8]}", **|
-        ENV["SPECWRK_ID"] ||= id # Unique default. Don't override the ENV value here
-
-        ENV["SPECWRK_COUNT"] = count.to_s
-        ENV["SPECWRK_SEED_WAITS"] = seed_waits.to_s
-        ENV["SPECWRK_OUT"] = Pathname.new(output).expand_path(Dir.pwd).to_s
-      end
 
       def start_workers
         @final_outputs = []
@@ -109,8 +72,61 @@ module Specwrk
       end
     end
 
+    module PortDiscoverable
+      def find_open_port
+        require "socket"
+
+        server = TCPServer.new("127.0.0.1", 0)
+        port = server.addr[1]
+        server.close
+
+        port
+      end
+    end
+
+    module Clientable
+      extend Hookable
+
+      on_included do |base|
+        base.unique_option :uri, type: :string, default: ENV.fetch("SPECWRK_SRV_URI", "http://localhost:#{ENV.fetch("SPECWRK_SRV_PORT", "5138")}"), desc: "HTTP URI of the server to pull jobs from. Overrides SPECWRK_SRV_URI"
+        base.unique_option :key, type: :string, default: ENV.fetch("SPECWRK_SRV_KEY", ""), aliases: ["-k"], desc: "Authentication key clients must use for access. Overrides SPECWRK_SRV_KEY"
+        base.unique_option :run, type: :string, default: ENV.fetch("SPECWRK_RUN", "main"), aliases: ["-r"], desc: "The run identifier for this job execution. Overrides SPECWRK_RUN"
+        base.unique_option :timeout, type: :integer, default: ENV.fetch("SPECWRK_TIMEOUT", "5"), aliases: ["-t"], desc: "The amount of time to wait for the server to respond. Overrides SPECWRK_TIMEOUT"
+        base.unique_option :network_retries, type: :integer, default: ENV.fetch("SPECWRK_NETWORK_RETRIES", "1"), desc: "The number of times to retry in the event of a network failure. Overrides SPECWRK_NETWORK_RETRIES"
+      end
+
+      on_setup do |uri:, key:, run:, timeout:, network_retries:, **|
+        ENV["SPECWRK_SRV_URI"] = uri
+        ENV["SPECWRK_SRV_KEY"] = key
+        ENV["SPECWRK_RUN"] = run
+        ENV["SPECWRK_TIMEOUT"] = timeout
+        ENV["SPECWRK_NETWORK_RETRIES"] = network_retries
+      end
+    end
+
+    module Workable
+      extend Hookable
+      include WorkerProcesses
+
+      on_included do |base|
+        base.unique_option :id, type: :string, desc: "The identifier for this worker. Overrides SPECWRK_ID. If none provided one in the format of specwrk-worker-8_RAND_CHARS-COUNT_INDEX will be used"
+        base.unique_option :count, type: :integer, default: 1, aliases: ["-c"], desc: "The number of worker processes you want to start"
+        base.unique_option :output, type: :string, default: ENV.fetch("SPECWRK_OUT", ".specwrk/"), aliases: ["-o"], desc: "Directory where worker output is stored. Overrides SPECWRK_OUT"
+        base.unique_option :seed_waits, type: :integer, default: ENV.fetch("SPECWRK_SEED_WAITS", "10"), aliases: ["-w"], desc: "Number of times the worker will wait for examples to be seeded to the server. 1sec between attempts. Overrides SPECWRK_SEED_WAITS"
+      end
+
+      on_setup do |count:, output:, seed_waits:, id: "specwrk-worker-#{SecureRandom.uuid[0, 8]}", **|
+        ENV["SPECWRK_ID"] ||= id # Unique default. Don't override the ENV value here
+
+        ENV["SPECWRK_COUNT"] = count.to_s
+        ENV["SPECWRK_SEED_WAITS"] = seed_waits.to_s
+        ENV["SPECWRK_OUT"] = Pathname.new(output).expand_path(Dir.pwd).to_s
+      end
+    end
+
     module Servable
       extend Hookable
+      include PortDiscoverable
 
       on_included do |base|
         base.unique_option :port, type: :integer, default: ENV.fetch("SPECWRK_SRV_PORT", "5138"), aliases: ["-p"], desc: "Server port. Overrides SPECWRK_SRV_PORT"
@@ -131,16 +147,6 @@ module Specwrk
         ENV["SPECWRK_SRV_BIND"] = bind
         ENV["SPECWRK_SRV_KEY"] = key
         ENV["SPECWRK_SRV_GROUP_BY"] = group_by
-      end
-
-      def find_open_port
-        require "socket"
-
-        server = TCPServer.new("127.0.0.1", 0)
-        port = server.addr[1]
-        server.close
-
-        port
       end
     end
 
@@ -310,25 +316,8 @@ module Specwrk
     end
 
     class Watch < Dry::CLI::Command
-      WORKER_INIT_SCRIPT = <<~RUBY
-        writer = IO.for_fd(Integer(ENV.fetch("SPECWRK_FINAL_FD")))
-        $final_output = writer # standard:disable Style/GlobalVars
-        $final_output.sync = true # standard:disable Style/GlobalVars
-        $stdout.sync = true
-        $stderr.sync = true
-
-        require "specwrk/worker"
-
-        trap("INT") do
-          RSpec.world.wants_to_quit = true if defined?(RSpec)
-          exit(1) if Specwrk.force_quit
-          Specwrk.force_quit = true
-        end
-
-        status = Specwrk::Worker.run!
-        $final_output.close # standard:disable Style/GlobalVars
-        exit(status)
-      RUBY
+      include WorkerProcesses
+      include PortDiscoverable
 
       desc "Start a server and workers, watch for file changes in the current directory, and execute specs"
       option :watchfile, type: :string, default: "Specwrk.watchfile.rb", desc: "Path to watchfile configuration"
@@ -464,54 +453,6 @@ module Specwrk
       def status(msg)
         print "\e[2K\r#{msg}"
         $stdout.flush
-      end
-
-      def start_workers
-        @final_outputs = []
-        @worker_pids = worker_count.times.map do |i|
-          reader, writer = IO.pipe
-          @final_outputs << reader
-
-          env = worker_env_for(i + 1).merge(
-            "SPECWRK_FINAL_FD" => writer.fileno.to_s
-          )
-
-          Process.spawn(
-            env, RbConfig.ruby, "-e", WORKER_INIT_SCRIPT,
-            writer.fileno => writer,
-            :in => :close,
-            :close_others => false
-          ).tap { writer.close }
-        end
-      end
-
-      def drain_outputs
-        @final_outputs.each do |reader|
-          reader.each_line { |line| $stdout.print line }
-          reader.close
-        end
-      end
-
-      def worker_count
-        @worker_count ||= [1, ENV["SPECWRK_COUNT"].to_i].max
-      end
-
-      def worker_env_for(idx)
-        {
-          "TEST_ENV_NUMBER" => idx.to_s,
-          "SPECWRK_FORKED" => idx.to_s,
-          "SPECWRK_ID" => "#{ENV.fetch("SPECWRK_ID", "specwrk-worker")}-#{idx}"
-        }
-      end
-
-      def find_open_port
-        require "socket"
-
-        server = TCPServer.new("127.0.0.1", 0)
-        port = server.addr[1]
-        server.close
-
-        port
       end
     end
 
