@@ -14,10 +14,6 @@ module Specwrk
 
         private
 
-        def skip_lock
-          true
-        end
-
         def interupt!
           Thread.new do
             # give the socket a moment to flush the response

@@ -17,7 +17,7 @@ module Specwrk
             [410, {"content-type" => "text/plain"}, ["That's a good lad. Run along now and go home."]]
           elsif expired_examples.length.positive?
             expired_examples.each { |_id, example| example[:worker_id] = worker_id }
-            pending.push_examples(expired_examples.values)
+            with_lock { pending.push_examples(expired_examples.values) }
             processing.delete(*expired_examples.keys.map(&:to_s))
             @examples = nil
 
@@ -29,7 +29,7 @@ module Specwrk
 
         def examples
           @examples ||= begin
-            bucket_id = pending.shift_bucket
+            bucket_id = with_lock { pending.shift_bucket }
             return [] if bucket_id.nil?
 
             bucket = pending.bucket_store_for(bucket_id)
