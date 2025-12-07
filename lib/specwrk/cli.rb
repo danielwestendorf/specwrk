@@ -44,6 +44,12 @@ module Specwrk
 
         require "specwrk/worker"
 
+        trap("INT") do
+          RSpec.world.wants_to_quit = true if defined?(RSpec)
+          exit(1) if Specwrk.force_quit
+          Specwrk.force_quit = true
+        end
+
         status = Specwrk::Worker.run!
         $final_output.close # standard:disable Style/GlobalVars
         exit(status)
@@ -312,6 +318,12 @@ module Specwrk
         $stderr.sync = true
 
         require "specwrk/worker"
+
+        trap("INT") do
+          RSpec.world.wants_to_quit = true if defined?(RSpec)
+          exit(1) if Specwrk.force_quit
+          Specwrk.force_quit = true
+        end
 
         status = Specwrk::Worker.run!
         $final_output.close # standard:disable Style/GlobalVars
