@@ -2,6 +2,7 @@
 
 require "pathname"
 require "securerandom"
+require "json"
 
 require "dry/cli"
 
@@ -240,6 +241,31 @@ module Specwrk
       include Workable
       include Servable
 
+      SEED_INIT_SCRIPT = <<~'RUBY'
+        require "json"
+        require "specwrk/list_examples"
+        require "specwrk/client"
+
+        def status(msg)
+          print "\e[2K\r#{msg}"
+          $stdout.flush
+        end
+
+        dir = JSON.parse(ENV.fetch("SPECWRK_SEED_DIRS"))
+        max_retries = Integer(ENV.fetch("SPECWRK_MAX_RETRIES", "0"))
+
+        examples = Specwrk::ListExamples.new(dir).examples
+
+        status "Waiting for server to respond..."
+        Specwrk::Client.wait_for_server!
+        status "Server responding ✓"
+        status "Seeding #{examples.length} examples..."
+        Specwrk::Client.new.seed(examples, max_retries)
+        file_count = examples.group_by { |e| e[:file_path] }.keys.size
+        status "🌱 Seeded #{examples.size} examples across #{file_count} files"
+        exit(1) if examples.size.zero?
+      RUBY
+
       desc "Start a server and workers, monitor until complete"
       option :max_retries, default: 0, desc: "Number of times an example will be re-run should it fail"
       argument :dir, type: :array, required: false, desc: "Relative spec directory to run against, default: spec/"
@@ -268,23 +294,7 @@ module Specwrk
         end
 
         return if Specwrk.force_quit
-        seed_pid = Process.fork do
-          require "specwrk/list_examples"
-          require "specwrk/client"
-
-          ENV["SPECWRK_FORKED"] = "1"
-          ENV["SPECWRK_SEED"] = "1"
-          examples = ListExamples.new(dir).examples
-
-          status "Waiting for server to respond..."
-          Client.wait_for_server!
-          status "Server responding ✓"
-          status "Seeding #{examples.length} examples..."
-          Client.new.seed(examples, max_retries)
-          file_count = examples.group_by { |e| e[:file_path] }.keys.size
-          status "🌱 Seeded #{examples.size} examples across #{file_count} files"
-          exit(1) if examples.size.zero?
-        end
+        seed_pid = spawn_seed_process(dir, max_retries)
 
         if Specwrk.wait_for_pids_exit([seed_pid]).value?(1)
           status "Seeding examples failed, exiting."
@@ -309,6 +319,19 @@ module Specwrk
         exit(status)
       end
 
+      def spawn_seed_process(dir, max_retries)
+        Process.spawn(
+          {
+            "SPECWRK_FORKED" => "1",
+            "SPECWRK_SEED" => "1",
+            "SPECWRK_SEED_DIRS" => JSON.dump(dir),
+            "SPECWRK_MAX_RETRIES" => max_retries.to_s
+          },
+          RbConfig.ruby, "-e", SEED_INIT_SCRIPT,
+          close_others: false
+        )
+      end
+
       def status(msg)
         print "\e[2K\r#{msg}"
         $stdout.flush
@@ -318,6 +341,17 @@ module Specwrk
     class Watch < Dry::CLI::Command
       include WorkerProcesses
       include PortDiscoverable
+
+      SEED_LOOP_INIT_SCRIPT = <<~RUBY
+        require "specwrk/ipc"
+        require "specwrk/seed_loop"
+
+        parent_pid = Integer(ENV.fetch("SPECWRK_IPC_PARENT_PID"))
+        fd = Integer(ENV.fetch("SPECWRK_IPC_FD"))
+        ipc = Specwrk::IPC.from_child_fd(fd, parent_pid: parent_pid)
+
+        Specwrk::SeedLoop.loop!(ipc)
+      RUBY
 
       desc "Start a server and workers, watch for file changes in the current directory, and execute specs"
       option :watchfile, type: :string, default: "Specwrk.watchfile.rb", desc: "Path to watchfile configuration"
@@ -421,14 +455,19 @@ module Specwrk
         @seed_pid ||= begin
           ipc # must be initialized in the parent process
 
-          @seed_pid = Process.fork do
-            require "specwrk/seed_loop"
+          ipc.child_socket.close_on_exec = false
 
-            ENV["SPECWRK_FORKED"] = "1"
-            ENV["SPECWRK_SEED"] = "1"
-
-            Specwrk::SeedLoop.loop!(ipc)
-          end
+          Process.spawn(
+            {
+              "SPECWRK_FORKED" => "1",
+              "SPECWRK_SEED" => "1",
+              "SPECWRK_IPC_FD" => ipc.child_socket.fileno.to_s,
+              "SPECWRK_IPC_PARENT_PID" => Process.pid.to_s
+            },
+            RbConfig.ruby, "-e", SEED_LOOP_INIT_SCRIPT,
+            ipc.child_socket => ipc.child_socket,
+            :close_others => false
+          )
         end
       end
 
