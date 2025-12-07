@@ -35,6 +35,20 @@ module Specwrk
     module Workable
       extend Hookable
 
+      WORKER_INIT_SCRIPT = <<~RUBY
+        writer = IO.for_fd(Integer(ENV.fetch("SPECWRK_FINAL_FD")))
+        $final_output = writer # standard:disable Style/GlobalVars
+        $final_output.sync = true # standard:disable Style/GlobalVars
+        $stdout.sync = true
+        $stderr.sync = true
+
+        require "specwrk/worker"
+
+        status = Specwrk::Worker.run!
+        $final_output.close # standard:disable Style/GlobalVars
+        exit(status)
+      RUBY
+
       on_included do |base|
         base.unique_option :id, type: :string, desc: "The identifier for this worker. Overrides SPECWRK_ID. If none provided one in the format of specwrk-worker-8_RAND_CHARS-COUNT_INDEX will be used"
         base.unique_option :count, type: :integer, default: 1, aliases: ["-c"], desc: "The number of worker processes you want to start"
@@ -56,20 +70,16 @@ module Specwrk
           reader, writer = IO.pipe
           @final_outputs << reader
 
-          Process.fork do
-            ENV["TEST_ENV_NUMBER"] = ENV["SPECWRK_FORKED"] = (i + 1).to_s
-            ENV["SPECWRK_ID"] = ENV["SPECWRK_ID"] + "-#{i + 1}"
+          env = worker_env_for(i + 1).merge(
+            "SPECWRK_FINAL_FD" => writer.fileno.to_s
+          )
 
-            $final_output = writer # standard:disable Style/GlobalVars
-            $final_output.sync = true # standard:disable Style/GlobalVars
-            reader.close
-
-            require "specwrk/worker"
-
-            status = Specwrk::Worker.run!
-            $final_output.close # standard:disable Style/GlobalVars
-            exit(status)
-          end.tap { writer.close }
+          Process.spawn(
+            env, RbConfig.ruby, "-e", WORKER_INIT_SCRIPT,
+            writer.fileno => writer,
+            :in => :close,
+            :close_others => false
+          ).tap { writer.close }
         end
       end
 
@@ -82,6 +92,14 @@ module Specwrk
 
       def worker_count
         @worker_count ||= [1, ENV["SPECWRK_COUNT"].to_i].max
+      end
+
+      def worker_env_for(idx)
+        {
+          "TEST_ENV_NUMBER" => idx.to_s,
+          "SPECWRK_FORKED" => idx.to_s,
+          "SPECWRK_ID" => "#{ENV.fetch("SPECWRK_ID", "specwrk-worker")}-#{idx}"
+        }
       end
     end
 
@@ -286,6 +304,20 @@ module Specwrk
     end
 
     class Watch < Dry::CLI::Command
+      WORKER_INIT_SCRIPT = <<~RUBY
+        writer = IO.for_fd(Integer(ENV.fetch("SPECWRK_FINAL_FD")))
+        $final_output = writer # standard:disable Style/GlobalVars
+        $final_output.sync = true # standard:disable Style/GlobalVars
+        $stdout.sync = true
+        $stderr.sync = true
+
+        require "specwrk/worker"
+
+        status = Specwrk::Worker.run!
+        $final_output.close # standard:disable Style/GlobalVars
+        exit(status)
+      RUBY
+
       desc "Start a server and workers, watch for file changes in the current directory, and execute specs"
       option :watchfile, type: :string, default: "Specwrk.watchfile.rb", desc: "Path to watchfile configuration"
       option :count, type: :integer, default: 1, aliases: ["-c"], desc: "The number of worker processes you want to start"
@@ -428,20 +460,16 @@ module Specwrk
           reader, writer = IO.pipe
           @final_outputs << reader
 
-          Process.fork do
-            ENV["TEST_ENV_NUMBER"] = ENV["SPECWRK_FORKED"] = (i + 1).to_s
-            ENV["SPECWRK_ID"] = "specwrk-worker-#{i + 1}"
+          env = worker_env_for(i + 1).merge(
+            "SPECWRK_FINAL_FD" => writer.fileno.to_s
+          )
 
-            $final_output = writer # standard:disable Style/GlobalVars
-            $final_output.sync = true # standard:disable Style/GlobalVars
-            reader.close
-
-            require "specwrk/worker"
-
-            status = Specwrk::Worker.run!
-            $final_output.close # standard:disable Style/GlobalVars
-            exit(status)
-          end.tap { writer.close }
+          Process.spawn(
+            env, RbConfig.ruby, "-e", WORKER_INIT_SCRIPT,
+            writer.fileno => writer,
+            :in => :close,
+            :close_others => false
+          ).tap { writer.close }
         end
       end
 
@@ -454,6 +482,14 @@ module Specwrk
 
       def worker_count
         @worker_count ||= [1, ENV["SPECWRK_COUNT"].to_i].max
+      end
+
+      def worker_env_for(idx)
+        {
+          "TEST_ENV_NUMBER" => idx.to_s,
+          "SPECWRK_FORKED" => idx.to_s,
+          "SPECWRK_ID" => "#{ENV.fetch("SPECWRK_ID", "specwrk-worker")}-#{idx}"
+        }
       end
 
       def find_open_port
