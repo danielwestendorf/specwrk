@@ -9,12 +9,6 @@ module Specwrk
         def with_response
           ok
         end
-
-        private
-
-        def skip_lock
-          false
-        end
       end
     end
   end

@@ -11,18 +11,19 @@ module Specwrk
         def with_response
           completed.merge!(completed_examples)
           processing.delete(*(completed_examples.keys + retry_examples.keys))
-          pending.merge!(retry_examples)
+
+          with_lock do
+            pending.merge!(retry_examples)
+          end
+
           failure_counts.merge!(retry_examples_new_failure_counts)
+
+          update_run_times
 
           with_pop_response
         end
 
         private
-
-        def before_lock
-          processing_examples
-          completed_examples
-        end
 
         def all_examples
           @all_examples ||= payload.map { |example| [example[:id], example] if processing_examples[example[:id]] }.compact.to_h
@@ -71,9 +72,8 @@ module Specwrk
           @completed_examples_status_counts ||= completed_examples.values.map { |example| example[:status] }.tally
         end
 
-        def after_lock
-          # We don't care about exact values here, just approximate run times are fine
-          # So if we overwrite run times from another process it is nbd
+        def update_run_times
+          # Rough run time tracking does not require holding the store lock
           run_times.merge! run_time_data
 
           # workers are single process, single-threaded, so safe to do this work without the lock

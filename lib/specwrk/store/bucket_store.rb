@@ -30,7 +30,4 @@ module Specwrk
       super
     end
   end
-
-  # Backward compatibility until all callers are migrated
-  Bucket = BucketStore
 end

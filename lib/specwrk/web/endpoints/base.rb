@@ -21,23 +21,15 @@ module Specwrk
 
           payload # parse the payload before any locking
 
-          before_lock
-
           worker.first_seen_at ||= Time.now
           worker.last_seen_at = Time.now
 
-          final_response = with_lock do
-            started_at = metadata[:started_at] ||= Time.now.iso8601
-            @started_at = Time.parse(started_at)
+          started_at = metadata[:started_at] ||= Time.now.iso8601
+          @started_at = Time.parse(started_at)
 
-            with_response
+          with_response.tap do |response|
+            response[1]["x-specwrk-status"] = worker_status.to_s
           end
-
-          after_lock
-
-          final_response[1]["x-specwrk-status"] = worker_status.to_s
-
-          final_response
         end
 
         def with_response
@@ -47,16 +39,6 @@ module Specwrk
         private
 
         attr_reader :request
-
-        def skip_lock
-          false
-        end
-
-        def before_lock
-        end
-
-        def after_lock
-        end
 
         def not_found
           if request.head?
@@ -133,12 +115,10 @@ module Specwrk
         end
 
         def with_lock
-          if skip_lock
-            yield
-          else
-            with_mutex do
-              Store.with_lock(URI(ENV.fetch("SPECWRK_SRV_STORE_URI", "memory:///")), run_id) { yield }
-            end
+          return yield unless run_id
+
+          with_mutex do
+            Store.with_lock(URI(ENV.fetch("SPECWRK_SRV_STORE_URI", "memory:///")), run_id) { yield }
           end
         end
 
