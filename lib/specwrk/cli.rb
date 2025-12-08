@@ -8,6 +8,7 @@ require "dry/cli"
 
 require "specwrk"
 require "specwrk/hookable"
+require "specwrk/store"
 
 module Specwrk
   module CLI
@@ -136,13 +137,15 @@ module Specwrk
         base.unique_option :output, type: :string, default: ENV.fetch("SPECWRK_OUT", ".specwrk/"), aliases: ["-o"], desc: "Directory where worker or server output is stored. Overrides SPECWRK_OUT"
         base.unique_option :store_uri, type: :string, desc: "Directory where server state is stored. Required for multi-node or multi-process servers."
         base.unique_option :group_by, values: %w[file timings], default: ENV.fetch("SPECWRK_SRV_GROUP_BY", "timings"), desc: "How examples will be grouped for workers; fallback to file if no timings are found. Overrides SPECWRK_SRV_GROUP_BY"
+        base.unique_option :store_serializer, values: %w[json msgpack], default: ENV.fetch("SPECWRK_STORE_SERIALIZER", "json"), desc: "Serializer to use for store payloads. Overrides SPECWRK_STORE_SERIALIZER"
         base.unique_option :verbose, type: :boolean, default: false, desc: "Run in verbose mode"
       end
 
-      on_setup do |port:, bind:, output:, key:, group_by:, verbose:, **opts|
+      on_setup do |port:, bind:, output:, key:, group_by:, verbose:, store_serializer:, **opts|
         ENV["SPECWRK_OUT"] = Pathname.new(output).expand_path(Dir.pwd).to_s
         ENV["SPECWRK_SRV_STORE_URI"] = opts[:store_uri] if opts.key? :store_uri
         ENV["SPECWRK_SRV_VERBOSE"] = "1" if verbose
+        ENV["SPECWRK_STORE_SERIALIZER"] = store_serializer
 
         ENV["SPECWRK_SRV_PORT"] = port
         ENV["SPECWRK_SRV_BIND"] = bind

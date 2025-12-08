@@ -11,6 +11,14 @@ module Specwrk
         def with_lock(_uri, _key)
           yield
         end
+
+        def serializer
+          @serializer ||= Serializer.resolve
+        end
+
+        def reset_serializer!
+          @serializer = nil
+        end
       end
 
       def initialize(uri, scope)
