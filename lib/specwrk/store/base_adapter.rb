@@ -3,6 +3,7 @@
 require "uri"
 
 require "specwrk/store"
+require "specwrk/store/serializer"
 
 module Specwrk
   class Store
