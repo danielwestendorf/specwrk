@@ -5,15 +5,27 @@ require "tmpdir"
 require "specwrk/store/file_adapter"
 
 RSpec.describe Specwrk::Store::FileAdapter do
-  let(:path) { File.join(uri.path, scope).tap { |path| FileUtils.mkdir_p(path) } }
+  let(:path) do
+    File.join(uri.path, scope).tap { |full_path| FileUtils.mkdir_p(full_path) }
+  end
   let(:uri) { URI("file://#{Dir.tmpdir}") }
   let(:scope) { SecureRandom.uuid }
 
   let(:instance) { described_class.new(uri, scope) }
 
+  around do |example|
+    original_env = ENV["SPECWRK_STORE_SERIALIZER"]
+    described_class.reset_serializer!
+
+    example.run
+  ensure
+    ENV["SPECWRK_STORE_SERIALIZER"] = original_env
+    described_class.reset_serializer!
+  end
+
   def write(key, value)
-    filename = "#{encode_key key}#{Specwrk::Store::FileAdapter::EXT}"
-    File.write(File.join(path, filename), JSON.generate(value))
+    filename = "#{encode_key key}#{Specwrk::Store::FileAdapter.ext}"
+    File.binwrite(File.join(path, filename), described_class.serializer.dump(value))
   end
 
   def encode_key(key)
@@ -21,7 +33,7 @@ RSpec.describe Specwrk::Store::FileAdapter do
   end
 
   def current_filenames
-    Dir.glob(File.join(path, "*#{Specwrk::Store::FileAdapter::EXT}")).map { |fname| File.basename(fname) }
+    Dir.glob(File.join(path, "*#{Specwrk::Store::FileAdapter.ext}")).map { |fname| File.basename(fname) }
   end
 
   describe ".schedule_work" do
@@ -118,7 +130,7 @@ RSpec.describe Specwrk::Store::FileAdapter do
   describe "#merge! and #multi_write" do
     subject { instance.merge!(b: 1, a: 2) }
 
-    it { expect { subject }.to change { current_filenames }.from([]).to(match_array(["#{encode_key("a")}#{Specwrk::Store::FileAdapter::EXT}", "#{encode_key("b")}#{Specwrk::Store::FileAdapter::EXT}"])) }
+    it { expect { subject }.to change { current_filenames }.from([]).to(match_array(["#{encode_key("a")}#{Specwrk::Store::FileAdapter.ext}", "#{encode_key("b")}#{Specwrk::Store::FileAdapter.ext}"])) }
   end
 
   describe "#multi_read" do
@@ -143,6 +155,20 @@ RSpec.describe Specwrk::Store::FileAdapter do
       before { write("a", 1) }
 
       it { is_expected.to eq(false) }
+    end
+  end
+
+  describe "serializer" do
+    it "honors msgpack when configured" do
+      ENV["SPECWRK_STORE_SERIALIZER"] = "msgpack"
+      described_class.reset_serializer!
+
+      instance["foo"] = {bar: "baz"}
+
+      raw = File.binread(File.join(path, "#{encode_key("foo")}#{Specwrk::Store::FileAdapter.ext}"))
+
+      expect { JSON.parse(raw) }.to raise_error(JSON::ParserError)
+      expect(MessagePack.load(raw, symbolize_keys: true)).to eq(bar: "baz")
     end
   end
 end

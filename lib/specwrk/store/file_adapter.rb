@@ -3,14 +3,14 @@
 require "json"
 require "base64"
 require "securerandom"
+require "fileutils"
 
 require "specwrk/store/base_adapter"
+require "specwrk/store/serializer"
 
 module Specwrk
   class Store
     class FileAdapter < BaseAdapter
-      EXT = ".wrk.json"
-
       @work_queue = Queue.new
       @threads = []
 
@@ -45,13 +45,17 @@ module Specwrk
             end
           end
         end
+
+        def ext
+          ".wrk.#{serializer.adapter_name}"
+        end
       end
 
       def [](key)
         content = read(key.to_s)
         return unless content
 
-        JSON.parse(content, symbolize_names: true)
+        self.class.serializer.load(content)
       end
 
       def []=(key, value)
@@ -60,7 +64,7 @@ module Specwrk
           delete(key_string)
         else
           filename = filename_for_key(key_string)
-          write(filename, JSON.generate(value))
+          write(filename, self.class.serializer.dump(value))
         end
       end
 
@@ -99,7 +103,7 @@ module Specwrk
           result = result_queue.pop
           next if result.last.nil?
 
-          results[result.first] = JSON.parse(result.last, symbolize_names: true)
+          results[result.first] = self.class.serializer.load(result.last)
         end
 
         read_keys.map { |key| [key.to_s, results[key.to_s]] if results.key?(key.to_s) }.compact.to_h # respect order requested in the returned hash
@@ -110,7 +114,7 @@ module Specwrk
 
         hash_with_filenames = hash.map { |key, value| [key.to_s, [filename_for_key(key.to_s), value]] }.to_h
         hash_with_filenames.each do |key, (filename, value)|
-          content = JSON.generate(value)
+          content = self.class.serializer.dump(value)
 
           self.class.schedule_work do
             result_queue << write(filename, content)
@@ -137,7 +141,7 @@ module Specwrk
 
       def read(key)
         filename = filename_for_key key
-        File.read(filename)
+        File.binread(filename)
       rescue Errno::ENOENT
         nil
       end
@@ -146,7 +150,7 @@ module Specwrk
         File.join(
           path,
           encode_key(key)
-        ) + EXT
+        ) + self.class.ext
       end
 
       def path
@@ -160,7 +164,7 @@ module Specwrk
       end
 
       def decode_key(key)
-        encoded_key_part = File.basename(key).delete_suffix(EXT)
+        encoded_key_part = File.basename(key).delete_suffix(self.class.ext)
         padding_count = (4 - encoded_key_part.length % 4) % 4
 
         Base64.urlsafe_decode64(encoded_key_part + ("=" * padding_count))
@@ -169,7 +173,7 @@ module Specwrk
       def known_key_pairs
         Dir.entries(path).sort.map do |filename|
           next if filename.start_with? "."
-          next unless filename.end_with? EXT
+          next unless filename.end_with? self.class.ext
 
           file_path = File.join(path, filename)
           [decode_key(filename), file_path]
