@@ -6,7 +6,6 @@ require "securerandom"
 require "fileutils"
 
 require "specwrk/store/base_adapter"
-require "specwrk/store/serializer"
 
 module Specwrk
   class Store
