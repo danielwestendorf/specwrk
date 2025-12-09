@@ -1,5 +1,64 @@
 # Changelog
 
+## Unreleased  
+[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.19.1...main)  
+- Add msgpack to the docker server — [#178](https://github.com/danielwestendorf/specwrk/pull/178) by [@danielwestendorf](https://github.com/danielwestendorf)  
+
+## v0.19.1 — 2025-12-08  
+[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.19.0...v0.19.1)  
+- Add missing require for serializer in base adapter — [#177](https://github.com/danielwestendorf/specwrk/pull/177) by [@danielwestendorf](https://github.com/danielwestendorf)  
+
+## v0.19.0 — 2025-12-08  
+[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.18.0...v0.19.0)  
+- Add support for configured serializer, adding msgpack — [#176](https://github.com/danielwestendorf/specwrk/pull/176) by [@danielwestendorf](https://github.com/danielwestendorf)  
+
+## v0.18.0 — 2025-12-07  
+[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.17.1...v0.18.0)  
+- Spawn workers with `spawn` instead of `fork` — [#174](https://github.com/danielwestendorf/specwrk/pull/174) by [@danielwestendorf](https://github.com/danielwestendorf)  
+- If pending is empty, return before acquiring lock — [#173](https://github.com/danielwestendorf/specwrk/pull/173) by [@danielwestendorf](https://github.com/danielwestendorf)  
+- Fix typo resulting in wrong group by — [#166](https://github.com/danielwestendorf/specwrk/pull/166) by [@danielwestendorf](https://github.com/danielwestendorf)  
+
+## v0.17.1 — 2025-12-06  
+[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.17.0...v0.17.1)  
+- Version bump only (no functional changes) — [@danielwestendorf](https://github.com/danielwestendorf)  
+
+## v0.17.0 — 2025-12-06  
+[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.16.3...v0.17.0)  
+- Add bucket store — [#170](https://github.com/danielwestendorf/specwrk/pull/170) by [@danielwestendorf](https://github.com/danielwestendorf)  
+- s/Bucket/BucketStore — [#171](https://github.com/danielwestendorf/specwrk/pull/171) by [@danielwestendorf](https://github.com/danielwestendorf)  
+- Bucket at seed — [#172](https://github.com/danielwestendorf/specwrk/pull/172) by [@danielwestendorf](https://github.com/danielwestendorf)  
+- Split Store classes into their own files — [#169](https://github.com/danielwestendorf/specwrk/pull/169) by [@danielwestendorf](https://github.com/danielwestendorf)  
+- Fix worker failing to flush on worker exit — [#167](https://github.com/danielwestendorf/specwrk/pull/167) by [@danielwestendorf](https://github.com/danielwestendorf)  
+- Typo — [#168](https://github.com/danielwestendorf/specwrk/pull/168) by [@danielwestendorf](https://github.com/danielwestendorf)  
+
+## v0.16.3 — 2025-12-01  
+[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.16.2...v0.16.3)  
+- Disable locks on heartbeat and health endpoints — [#163](https://github.com/danielwestendorf/specwrk/pull/163) by [@danielwestendorf](https://github.com/danielwestendorf)  
+- Add specwrk worker info to logger — [#164](https://github.com/danielwestendorf/specwrk/pull/164) by [@danielwestendorf](https://github.com/danielwestendorf)  
+- Ignore Agents.md — [#165](https://github.com/danielwestendorf/specwrk/pull/165) by [@danielwestendorf](https://github.com/danielwestendorf)  
+
+## v0.16.2 — 2025-10-23  
+[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.16.1...v0.16.2)  
+- exit(1) from seed process when example size is zero — [#158](https://github.com/danielwestendorf/specwrk/pull/158) by [@danielwestendorf](https://github.com/danielwestendorf)  
+
+## v0.16.1 — 2025-10-03  
+[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.16.0...v0.16.1)  
+- Ensure next_examples are always cleared after execution — [#156](https://github.com/danielwestendorf/specwrk/pull/156) by [@danielwestendorf](https://github.com/danielwestendorf)  
+- More frequent heartbeats — [#154](https://github.com/danielwestendorf/specwrk/pull/154) by [@danielwestendorf](https://github.com/danielwestendorf)  
+- Ensure mutex is held when a lock is expected — [#153](https://github.com/danielwestendorf/specwrk/pull/153) by [@danielwestendorf](https://github.com/danielwestendorf)  
+
+## v0.16.0 — 2025-10-02  
+[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.15.10...v0.16.0)  
+- Support retry of all client requests, configurable count — [#151](https://github.com/danielwestendorf/specwrk/pull/151) by [@danielwestendorf](https://github.com/danielwestendorf)  
+- Expire workers from worker heartbeats — [#149](https://github.com/danielwestendorf/specwrk/pull/149) by [@danielwestendorf](https://github.com/danielwestendorf)  
+- Fix a few minor typos in README — [#147](https://github.com/danielwestendorf/specwrk/pull/147) by [@danielwestendorf](https://github.com/danielwestendorf)  
+- Run flake test if the srv uri is localhost — [#146](https://github.com/danielwestendorf/specwrk/pull/146) by [@danielwestendorf](https://github.com/danielwestendorf)  
+
+## v0.15.10 — 2025-08-28  
+[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.15.9...v0.15.10)  
+- Handle default path for start and seed better — [#144](https://github.com/danielwestendorf/specwrk/pull/144) by [@danielwestendorf](https://github.com/danielwestendorf)  
+- Mention Redis storage adapter — [@danielwestendorf](https://github.com/danielwestendorf)  
+
 ## v0.15.9 — 2025-08-28  
 [Compare](https://github.com/danielwestendorf/specwrk/compare/v0.15.8...v0.15.9)  
 - Support lock skipping for read-only endpoints — [#139](https://github.com/danielwestendorf/specwrk/pull/139) by [@danielwestendorf](https://github.com/danielwestendorf)  
