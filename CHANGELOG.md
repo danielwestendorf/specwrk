@@ -1,7 +1,12 @@
 # Changelog
 
 ## Unreleased  
-[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.19.1...main)  
+[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.19.2...main)  
+
+## v0.19.2 — 2025-12-09  
+[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.19.1...v0.19.2)  
+- Optimize msgpack usage by using one packer/unpacker — [#180](https://github.com/danielwestendorf/specwrk/pull/180) by [@danielwestendorf](https://github.com/danielwestendorf)  
+- Standard style to v3.4 — [#179](https://github.com/danielwestendorf/specwrk/pull/179) by [@danielwestendorf](https://github.com/danielwestendorf)  
 - Add msgpack to the docker server — [#178](https://github.com/danielwestendorf/specwrk/pull/178) by [@danielwestendorf](https://github.com/danielwestendorf)  
 
 ## v0.19.1 — 2025-12-08  
