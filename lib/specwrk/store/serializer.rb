@@ -22,31 +22,43 @@ module Specwrk
       end
 
       module MessagePack
-        module_function
-
         def ensure_loaded!
+          return if defined?(::MessagePack)
+
           require "msgpack"
         rescue LoadError
           raise LoadError, "Unable to use msgpack, gem not found. Add `gem 'msgpack' to your Gemfile and bundle install"
         end
-
-        module_function
 
         def adapter_name
           "msgpack"
         end
 
         def dump(value)
-          ensure_loaded!
-
-          ::MessagePack.dump(value)
+          packer.tap(&:clear)
+            .tap { it.write(value) }
+            .then(&:to_s)
         end
 
         def load(payload)
+          unpacker.tap(&:reset)
+            .tap { it.feed(payload) }
+            .then { it.read }
+        end
+
+        def packer
           ensure_loaded!
 
-          ::MessagePack.load(payload, symbolize_keys: true)
+          Thread.current[:__specwrk_msgpack_packer] ||= ::MessagePack::Packer.new
         end
+
+        def unpacker
+          ensure_loaded!
+
+          Thread.current[:__specwrk_msgpack_unpacker] ||= ::MessagePack::Unpacker.new(symbolize_keys: true)
+        end
+
+        module_function :ensure_loaded!, :adapter_name, :dump, :load, :packer, :unpacker
       end
     end
 
