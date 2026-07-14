@@ -70,9 +70,10 @@ module Specwrk
     end
 
     def execute
-      executor.run next_examples
+      batch = next_examples
+      executor.run batch
       @next_examples = nil
-      complete_examples
+      complete_examples batch
     rescue UnhandledResponseError => e
       # If fetching examples via next_exampels fails we can just try again so warn and return
       # Expects complete_examples to rescue this error if raised in that method
@@ -84,8 +85,8 @@ module Specwrk
       client.fetch_examples
     end
 
-    def complete_examples
-      @next_examples = client.complete_and_fetch_examples executor.examples
+    def complete_examples(batch = [])
+      @next_examples = client.complete_and_fetch_examples executor.examples + unexecuted_examples(batch)
     rescue UnhandledResponseError => e
       # I do not think we should so lightly abandon the completion of executed examples
       # try to complete until successful or terminated
@@ -93,6 +94,46 @@ module Specwrk
 
       sleep 1
       retry
+    end
+
+    # Failure results for examples that were part of the batch but which the
+    # RSpec runner produced no result for — e.g. the run aborted in a
+    # `before(:suite)` hook or a spec file failed to load, so zero examples
+    # executed.
+    #
+    # Every example popped from the server MUST be reported back. The server
+    # only removes examples from its processing store when a completion names
+    # them, and its expiry/requeue path only reclaims work from workers whose
+    # heartbeat has gone stale — a live worker's stranded examples are never
+    # reclaimed. If they were silently dropped here, `processing` would never
+    # empty, the run-complete condition could never be met, and every worker
+    # would poll for more work forever. Reporting them as failed lets the run
+    # finish loudly (and lets `--max-retries` retry them like any other
+    # failure).
+    def unexecuted_examples(batch)
+      return [] if batch.nil? || batch.empty?
+
+      executed_ids = executor.examples.map { |example| example[:id] }
+      now = Time.now
+
+      batch.reject { |example| executed_ids.include?(example[:id]) }.map do |example|
+        {
+          id: example[:id],
+          full_description: example[:full_description] || example[:id],
+          status: "failed",
+          file_path: example[:file_path],
+          line_number: example[:line_number],
+          started_at: now.iso8601(6),
+          finished_at: now.iso8601(6),
+          run_time: 0.0,
+          exception: {
+            class: "Specwrk::Error",
+            message: "Example was assigned to #{ENV.fetch("SPECWRK_ID", "specwrk-worker")} but the RSpec runner produced no result for it. " \
+                     "This usually means the run aborted before executing any examples — check for an error in a `before(:suite)` hook or a spec file that fails to load.",
+            backtrace: []
+          }
+        }
+      end
     end
 
     def thump

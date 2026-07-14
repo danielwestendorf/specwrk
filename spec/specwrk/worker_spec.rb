@@ -231,6 +231,19 @@ RSpec.describe Specwrk::Worker do
       expect { instance.execute }.to change { instance.next_examples.object_id }
     end
 
+    it "passes the popped batch to complete_examples so unexecuted examples can be reported" do
+      batch = [{id: "a.rb:1"}, {id: "b.rb:2"}]
+      allow(client).to receive(:fetch_examples)
+        .and_return(batch)
+
+      expect(executor).to receive(:run)
+        .with(batch)
+      expect(instance).to receive(:complete_examples)
+        .with(batch)
+
+      instance.execute
+    end
+
     it "warns when an unhandled error is raised" do
       expect(client).to receive(:fetch_examples)
         .and_raise(Specwrk::UnhandledResponseError, "oops")
@@ -270,6 +283,58 @@ RSpec.describe Specwrk::Worker do
         .with(1)
 
       instance.complete_examples
+    end
+
+    it "reports batch examples the runner never executed as failed so they are not stranded on the server" do
+      allow(executor).to receive(:examples)
+        .and_return([{id: "a.rb:1", status: "passed"}])
+
+      batch = [{id: "a.rb:1", file_path: "a.rb"}, {id: "c.rb:3", file_path: "c.rb"}]
+
+      expect(client).to receive(:complete_and_fetch_examples) do |examples|
+        expect(examples.map { |example| example[:id] }).to eq(["a.rb:1", "c.rb:3"])
+        expect(examples.last[:status]).to eq("failed")
+        "next-batch"
+      end
+
+      instance.complete_examples(batch)
+
+      expect(instance.instance_variable_get(:@next_examples)).to eq("next-batch")
+    end
+  end
+
+  describe "#unexecuted_examples" do
+    before do
+      allow(executor).to receive(:examples)
+        .and_return([{id: "a.rb:1", status: "passed"}])
+    end
+
+    it "returns an empty array for a nil or empty batch" do
+      expect(instance.unexecuted_examples(nil)).to eq([])
+      expect(instance.unexecuted_examples([])).to eq([])
+    end
+
+    it "returns an empty array when every batch example produced a result" do
+      expect(instance.unexecuted_examples([{id: "a.rb:1", file_path: "a.rb"}])).to eq([])
+    end
+
+    it "synthesizes a failed result for each batch example the runner produced no result for" do
+      batch = [
+        {id: "a.rb:1", file_path: "a.rb"},
+        {id: "c.rb:3", file_path: "c.rb", line_number: 3}
+      ]
+
+      results = instance.unexecuted_examples(batch)
+
+      expect(results.length).to eq(1)
+
+      result = results.first
+      expect(result[:id]).to eq("c.rb:3")
+      expect(result[:status]).to eq("failed")
+      expect(result[:file_path]).to eq("c.rb")
+      expect(result[:line_number]).to eq(3)
+      expect(result[:run_time]).to eq(0.0)
+      expect(result.dig(:exception, :message)).to include("produced no result")
     end
   end
 

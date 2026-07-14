@@ -2,6 +2,7 @@
 
 ## Unreleased  
 [Compare](https://github.com/danielwestendorf/specwrk/compare/v0.19.2...main)  
+- Report batch examples the RSpec runner never executed (e.g. a `before(:suite)` error aborted the run) as failed, instead of silently stranding them in the server's processing store and hanging the whole run — by [@benjaminwood](https://github.com/benjaminwood)  
 
 ## v0.19.2 — 2025-12-09  
 [Compare](https://github.com/danielwestendorf/specwrk/compare/v0.19.1...v0.19.2)  
