@@ -142,6 +142,46 @@ RSpec.describe Specwrk::Store::FileAdapter do
     end
 
     it { is_expected.to eq("b" => 2, "a" => 1) }
+
+    it "retries transient bad file descriptor errors" do
+      stub_const("Specwrk::Store::FileAdapter::READ_RETRY_DELAY", 0)
+
+      attempts = 0
+      mutex = Mutex.new
+      filename = File.join(path, "#{encode_key("a")}#{Specwrk::Store::FileAdapter.ext}")
+
+      allow(File).to receive(:binread).and_wrap_original do |original, path|
+        if path == filename
+          current_attempt = mutex.synchronize { attempts += 1 }
+          raise Errno::EBADF, "transient read" if current_attempt == 1
+        end
+
+        original.call(path)
+      end
+
+      expect(instance.multi_read("a")).to eq("a" => 1)
+      expect(mutex.synchronize { attempts }).to eq(2)
+    end
+
+    it "raises if bad file descriptor errors continue after retries" do
+      stub_const("Specwrk::Store::FileAdapter::READ_RETRY_DELAY", 0)
+
+      attempts = 0
+      mutex = Mutex.new
+      filename = File.join(path, "#{encode_key("a")}#{Specwrk::Store::FileAdapter.ext}")
+
+      allow(File).to receive(:binread).and_wrap_original do |original, path|
+        if path == filename
+          mutex.synchronize { attempts += 1 }
+          raise Errno::EBADF, "persistent read"
+        end
+
+        original.call(path)
+      end
+
+      expect { instance.multi_read("a") }.to raise_error(Errno::EBADF)
+      expect(mutex.synchronize { attempts }).to eq(described_class::READ_ATTEMPTS)
+    end
   end
 
   describe "#empty?" do

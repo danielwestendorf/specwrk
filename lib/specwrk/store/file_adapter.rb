@@ -10,6 +10,9 @@ require "specwrk/store/base_adapter"
 module Specwrk
   class Store
     class FileAdapter < BaseAdapter
+      READ_ATTEMPTS = 3
+      READ_RETRY_DELAY = 0.01
+
       @work_queue = Queue.new
       @threads = []
 
@@ -91,18 +94,21 @@ module Specwrk
 
         read_keys.each do |key|
           self.class.schedule_work do
-            result_queue.push([key.to_s, read(key)])
+            result_queue.push([:ok, key.to_s, read(key)])
+          rescue => e
+            result_queue.push([:error, key.to_s, e])
           end
         end
 
-        Thread.pass until result_queue.length == read_keys.length
+        raw_results = read_keys.length.times.map { result_queue.pop }
+        error = raw_results.find { |status, _key, _result| status == :error }
+        raise error.last if error
 
         results = {}
-        until result_queue.empty?
-          result = result_queue.pop
-          next if result.last.nil?
+        raw_results.each do |_status, key, content|
+          next if content.nil?
 
-          results[result.first] = self.class.serializer.load(result.last)
+          results[key] = self.class.serializer.load(content)
         end
 
         read_keys.map { |key| [key.to_s, results[key.to_s]] if results.key?(key.to_s) }.compact.to_h # respect order requested in the returned hash
@@ -140,7 +146,17 @@ module Specwrk
 
       def read(key)
         filename = filename_for_key key
-        File.binread(filename)
+        attempts = 0
+
+        begin
+          attempts += 1
+          File.binread(filename)
+        rescue Errno::EBADF
+          raise if attempts >= READ_ATTEMPTS
+
+          sleep(READ_RETRY_DELAY * attempts)
+          retry
+        end
       rescue Errno::ENOENT
         nil
       end
