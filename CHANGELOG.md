@@ -2,7 +2,9 @@
 
 ## Unreleased  
 [Compare](https://github.com/danielwestendorf/specwrk/compare/v0.19.2...main)  
+- Retry transient file store read descriptor errors — [@danielwestendorf](https://github.com/danielwestendorf)  
 - Complete omitted worker processing examples as failures — [@danielwestendorf](https://github.com/danielwestendorf), [@benjaminwood](https://github.com/benjaminwood)  
+
 
 ## v0.19.2 — 2025-12-09  
 [Compare](https://github.com/danielwestendorf/specwrk/compare/v0.19.1...v0.19.2)  
