@@ -9,17 +9,25 @@ RSpec.describe Specwrk::Worker do
 
   let(:instance) { described_class.new }
 
+  let(:executor_examples) { [{id: "a.rb:1"}, {id: "b.rb:2"}] }
+  let(:fetched_examples) do
+    [
+      {id: "a.rb:1", file_path: "a.rb"},
+      {id: "b.rb:2", file_path: "b.rb"}
+    ]
+  end
+
   let(:executor) do
     instance_double Specwrk::Worker::Executor,
       final_output: tempfile,
-      examples: %w[a.rb:1 b.rb:2]
+      examples: executor_examples
   end
 
   before do
     allow(Specwrk::Client).to receive(:new)
       .and_return(client)
 
-    allow(client).to receive(:fetch_examples) { %w[a.rb:1 b.rb:2].dup }
+    allow(client).to receive(:fetch_examples) { fetched_examples.map(&:dup) }
 
     allow(executor).to receive(:flush_log)
 
@@ -224,7 +232,7 @@ RSpec.describe Specwrk::Worker do
   describe "#execute" do
     it "tries fetching examples, executing them, and completing them" do
       expect(executor).to receive(:run)
-        .with(client.fetch_examples)
+        .with(fetched_examples)
 
       expect(instance).to receive(:complete_examples)
 

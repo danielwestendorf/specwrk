@@ -7,12 +7,14 @@ module Specwrk
     module Endpoints
       class CompleteAndPop < Popable
         EXAMPLE_STATUSES = %w[passed failed pending]
+        SYNTHETIC_FAILURE_CLASS = "Specwrk::WorkerExecutionError"
 
         def with_response
           retry_examples # pre-calculate before lock
+          omitted_processing_examples # pre-calculate before lock
 
           with_lock do
-            processing.delete(*(completed_examples.keys + retry_examples.keys))
+            processing.delete(*(completed_examples.keys + retry_examples.keys).map(&:to_s))
             pending.merge!(retry_examples)
           end
 
@@ -26,24 +28,30 @@ module Specwrk
 
         private
 
-        def all_examples
-          @all_examples ||= payload.map { |example| [example[:id], example] if processing_examples[example[:id]] }.compact.to_h
-        end
-
-        def processing_examples
-          @processing_examples ||= processing.multi_read(*payload.map { |example| example[:id] })
-        end
-
-        def completed_examples
-          @completed_examples ||= all_examples.map do |id, example|
-            next if retry_example?(example)
-
-            [id, example]
+        def reported_processing_examples
+          @reported_processing_examples ||= payload.map do |example|
+            [example[:id], example] if processing_examples_for_payload[example[:id]]
           end.compact.to_h
         end
 
+        def processing_examples_for_payload
+          @processing_examples_for_payload ||= processing.multi_read(*payload.map { |example| example[:id] })
+        end
+
+        def completed_examples
+          @completed_examples ||= begin
+            reported_completed_examples = reported_processing_examples.map do |id, example|
+              next if retry_example?(example)
+
+              [id, example]
+            end.compact.to_h
+
+            reported_completed_examples.merge(unreported_completed_examples)
+          end
+        end
+
         def retry_examples
-          @retry_examples ||= all_examples.map do |id, example|
+          @retry_examples ||= reported_processing_examples.map do |id, example|
             next unless retry_example?(example)
 
             [id, example]
@@ -66,7 +74,48 @@ module Specwrk
         end
 
         def all_example_failure_counts
-          @all_example_failure_counts ||= failure_counts.multi_read(*all_examples.keys)
+          @all_example_failure_counts ||= failure_counts.multi_read(*reported_processing_examples.keys)
+        end
+
+        def omitted_processing_examples
+          @omitted_processing_examples ||= processing.to_h.select do |_id, example|
+            example[:worker_id].to_s == worker_id && !payload_example_ids.include?(example[:id].to_s)
+          end
+        end
+
+        def unreported_completed_examples
+          @unreported_completed_examples ||= omitted_processing_examples.transform_values { |example| synthetic_failure_for(example) }
+        end
+
+        def payload_example_ids
+          @payload_example_ids ||= payload.map { |example| example[:id].to_s }.uniq
+        end
+
+        def synthetic_failure_for(example)
+          finished_at = Time.now
+
+          {
+            id: example[:id],
+            full_description: "Specwrk worker execution failed before completing #{example[:id]}",
+            status: "failed",
+            file_path: example[:file_path],
+            line_number: line_number_for(example),
+            started_at: finished_at.iso8601(6),
+            finished_at: finished_at.iso8601(6),
+            run_time: 0.0,
+            exception: {
+              class: SYNTHETIC_FAILURE_CLASS,
+              message: "Worker #{worker_id} claimed this example but did not submit a completion result. Check worker stderr/stdout for the underlying RSpec output.",
+              backtrace: []
+            }
+          }
+        end
+
+        def line_number_for(example)
+          return example[:line_number] if example[:line_number]
+
+          match = example[:id].to_s.match(/:(\d+)\z/)
+          match[1].to_i if match
         end
 
         def completed_examples_status_counts
@@ -87,7 +136,9 @@ module Specwrk
         end
 
         def run_time_data
-          @run_time_data ||= payload.map { |example| [example[:id], example[:run_time]] }.to_h
+          @run_time_data ||= payload.map { |example| [example[:id], example[:run_time]] }.to_h.merge(
+            unreported_completed_examples.transform_values { |example| example[:run_time] }
+          )
         end
       end
     end

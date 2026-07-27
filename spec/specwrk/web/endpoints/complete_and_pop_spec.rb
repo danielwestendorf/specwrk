@@ -46,6 +46,57 @@ RSpec.describe Specwrk::Web::Endpoints::CompleteAndPop do
     it { expect { subject }.to change { processing.reload["a.rb:2"] }.from(nil).to({expected_run_time: 0.1, file_path: "a.rb", id: "a.rb:2", worker_id: "foobar-0", processing_started_at: instance_of(Integer)}) }
   end
 
+  context "when worker omits processing examples from the completion payload" do
+    let(:body) { JSON.generate([]) }
+    let(:existing_processing_data) do
+      {
+        "a.rb:1": {id: "a.rb:1", file_path: "a.rb", expected_run_time: 0.1, worker_id: worker_id, processing_started_at: Time.now.to_i},
+        "a.rb:2": {id: "a.rb:2", file_path: "a.rb", expected_run_time: 0.1, worker_id: worker_id, processing_started_at: Time.now.to_i}
+      }
+    end
+
+    it { is_expected.to eq([410, {"content-type" => "text/plain", "x-specwrk-status" => "2"}, ["That's a good lad. Run along now and go home."]]) }
+    it { expect { subject }.to change { processing.reload.length }.from(2).to(0) }
+    it { expect { subject }.to change { completed.reload.length }.from(0).to(2) }
+    it { expect { subject }.to change { worker["failed"] }.from(nil).to(2) }
+    it { expect { subject }.to change { run_times.reload.length }.from(0).to(2) }
+
+    it "records synthetic failures" do
+      subject
+
+      failure = completed.reload["a.rb:1"]
+      expect(failure).to include(
+        id: "a.rb:1",
+        file_path: "a.rb",
+        line_number: 1,
+        run_time: 0.0,
+        status: "failed"
+      )
+      expect(failure.dig(:exception, :class)).to eq("Specwrk::WorkerExecutionError")
+      expect(failure.dig(:exception, :message)).to include("did not submit a completion result")
+      expect(failure.dig(:exception, :backtrace)).to eq([])
+    end
+  end
+
+  context "when another worker also has processing examples" do
+    let(:body) { JSON.generate([]) }
+    let(:existing_processing_data) do
+      {
+        "a.rb:1": {id: "a.rb:1", file_path: "a.rb", expected_run_time: 0.1, worker_id: worker_id, processing_started_at: Time.now.to_i},
+        "a.rb:2": {id: "a.rb:2", file_path: "a.rb", expected_run_time: 0.1, worker_id: other_worker_id, processing_started_at: Time.now.to_i}
+      }
+    end
+
+    it "only completes the current worker's omitted examples" do
+      subject
+
+      expect(completed.reload["a.rb:1"]).to include(status: "failed")
+      expect(completed.reload["a.rb:2"]).to be_nil
+      expect(processing.reload["a.rb:1"]).to be_nil
+      expect(processing.reload["a.rb:2"]).to include(worker_id: other_worker_id)
+    end
+  end
+
   context "no items in the processing queue, but completed queue has items" do
     let(:existing_completed_data) do
       {"a.rb:2": {id: "a.rb:2", file_path: "a.rb", expected_run_time: 0.1}}
