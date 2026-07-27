@@ -36,14 +36,14 @@ module Specwrk
 
         def dump(value)
           packer.tap(&:clear)
-            .tap { it.write(value) }
+            .tap { |msgpack| msgpack.write(value) }
             .then(&:to_s)
         end
 
         def load(payload)
           unpacker.tap(&:reset)
-            .tap { it.feed(payload) }
-            .then { it.read }
+            .tap { |msgpack| msgpack.feed(payload) }
+            .then { |msgpack| msgpack.read }
         end
 
         def packer
