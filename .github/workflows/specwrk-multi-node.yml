@@ -17,6 +17,7 @@ env:
 
 jobs:
   prepare:
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 2
 
@@ -35,6 +36,7 @@ jobs:
       ## /SPECWRK STEP ##
     
   specwrk-multi-node:
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 2
     needs: [prepare]
@@ -72,4 +74,3 @@ jobs:
             cat "$file"
             echo
           done
-
