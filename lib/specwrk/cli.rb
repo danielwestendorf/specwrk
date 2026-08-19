@@ -67,7 +67,7 @@ module Specwrk
 
       def worker_env_for(idx)
         {
-          "TEST_ENV_NUMBER" => idx.to_s,
+          "TEST_ENV_NUMBER" => (idx == 1) ? "" : idx.to_s,
           "SPECWRK_FORKED" => idx.to_s,
           "SPECWRK_ID" => "#{ENV.fetch("SPECWRK_ID", "specwrk-worker")}-#{idx}"
         }
