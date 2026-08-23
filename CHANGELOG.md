@@ -1,7 +1,11 @@
 # Changelog
 
 ## Unreleased  
-[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.20.0...main)  
+[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.20.1...main)  
+
+## v0.20.1 — 2026-08-23  
+[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.20.0...v0.20.1)  
+- Publish the Docker server with `specwrk-store-redis_adapter` 0.2.1 — [@danielwestendorf](https://github.com/danielwestendorf)  
 
 ## v0.20.0 — 2026-08-23  
 [Compare](https://github.com/danielwestendorf/specwrk/compare/v0.19.4...v0.20.0)  
