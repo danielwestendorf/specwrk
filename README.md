@@ -292,6 +292,8 @@ specwrk is different because it:
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/danielwestendorf/specwrk.
 
+Maintainers can follow [RELEASING.md](RELEASING.md) to publish the gem and Docker image.
+
 ## License
 
 The gem is available as open source under the terms of the [LGPLv3 License](http://www.gnu.org/licenses/lgpl-3.0.html).
