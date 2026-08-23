@@ -12,6 +12,8 @@ Specwrk.net_http = Net::HTTP
 
 module Specwrk
   class Client
+    LockedResponseError = Class.new(StandardError)
+
     def self.connect?
       http = build_http
       http.start
@@ -158,10 +160,14 @@ module Specwrk
         @last_request_at = Time.now
         @http.request(request).tap do |response|
           @retry_count = 0
+          raise LockedResponseError if response.code == "423"
 
           @worker_status = response["x-specwrk-status"].to_i if response["x-specwrk-status"]
         end
       end
+    rescue LockedResponseError
+      sleep rand
+      retry
     rescue Net::ReadTimeout, Net::WriteTimeout => e
       @retry_count ||= 0
 

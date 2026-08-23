@@ -24,11 +24,13 @@ module Specwrk
 
           lock_file = File.open(lock_file_path, "a")
 
-          Thread.pass until lock_file.flock(File::LOCK_EX)
+          locked = lock_file.flock(File::LOCK_EX | File::LOCK_NB)
+          raise LockUnavailableError unless locked
 
           yield
         ensure
-          lock_file.flock(File::LOCK_UN)
+          lock_file&.flock(File::LOCK_UN) if locked
+          lock_file&.close
         end
 
         def schedule_work(&blk)

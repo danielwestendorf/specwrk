@@ -289,6 +289,28 @@ RSpec.describe Specwrk::Client do
       end
     end
 
+    context "when the store lock is temporarily unavailable" do
+      let(:examples) { [{id: 2, name: "retried example"}] }
+
+      before do
+        stub_request(:post, "#{base_uri}/complete_and_pop")
+          .with(headers: headers)
+          .to_return(status: 423).then
+          .to_return(status: 423).then
+          .to_return(status: 200, body: examples.to_json)
+      end
+
+      it "retries indefinitely with jitter until the request succeeds" do
+        expect(client).to receive(:rand).and_return(0.12).ordered
+        expect(client).to receive(:sleep).with(0.12).ordered
+        expect(client).to receive(:rand).and_return(0.34).ordered
+        expect(client).to receive(:sleep).with(0.34).ordered
+
+        expect(subject).to eq(examples)
+        expect(client.retry_count).to eq(0)
+      end
+    end
+
     context "when a network timeout happens a couple of times then succeeds" do
       let(:examples) { [{id: 2, name: "retried example"}] }
 

@@ -34,4 +34,30 @@ RSpec.describe Specwrk::Web::Endpoints::Base do
     it { expect { response }.not_to change { worker.reload.first_seen_at } }
     it { expect { response }.to change { worker.reload.last_seen_at } }
   end
+
+  context "when the store lock is unavailable" do
+    let(:endpoint_class) do
+      Class.new(described_class) do
+        def with_response
+          with_lock { ok }
+        end
+      end
+    end
+    let(:instance) { endpoint_class.new(request) }
+
+    before do
+      allow(Specwrk::Store).to receive(:with_lock)
+        .and_raise(Specwrk::Store::LockUnavailableError)
+    end
+
+    it do
+      expect(response).to eq([423, {"content-type" => "text/plain"}, ["Locked. Try again later."]])
+    end
+
+    context "with a HEAD request" do
+      let(:request_method) { "HEAD" }
+
+      it { expect(response).to eq([423, {}, []]) }
+    end
+  end
 end

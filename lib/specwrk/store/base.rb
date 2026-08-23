@@ -4,6 +4,8 @@ require "uri"
 
 module Specwrk
   class Store
+    LockUnavailableError = Class.new(StandardError)
+
     class << self
       def with_lock(uri, key)
         adapter_klass(uri).with_lock(uri, key) { yield }

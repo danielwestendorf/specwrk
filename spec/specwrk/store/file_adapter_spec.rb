@@ -36,6 +36,31 @@ RSpec.describe Specwrk::Store::FileAdapter do
     Dir.glob(File.join(path, "*#{Specwrk::Store::FileAdapter.ext}")).map { |fname| File.basename(fname) }
   end
 
+  describe ".with_lock" do
+    let(:lock_file) { instance_double(File, close: true) }
+
+    before do
+      allow(File).to receive(:open).and_return(lock_file)
+    end
+
+    it "yields while the lock is held and releases it afterward" do
+      expect(lock_file).to receive(:flock).with(File::LOCK_EX | File::LOCK_NB).and_return(0).ordered
+      expect(lock_file).to receive(:flock).with(File::LOCK_UN).and_return(0).ordered
+      expect(lock_file).to receive(:close).ordered
+
+      expect { |block| described_class.with_lock(uri, scope, &block) }.to yield_control
+    end
+
+    it "raises when the lock is unavailable" do
+      expect(lock_file).to receive(:flock).with(File::LOCK_EX | File::LOCK_NB).and_return(false)
+      expect(lock_file).not_to receive(:flock).with(File::LOCK_UN)
+      expect(lock_file).to receive(:close)
+
+      expect { described_class.with_lock(uri, scope) {} }
+        .to raise_error(Specwrk::Store::LockUnavailableError)
+    end
+  end
+
   describe ".schedule_work" do
     let(:klass) do
       Class.new do
