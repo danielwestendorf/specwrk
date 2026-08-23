@@ -42,26 +42,30 @@ git pull --ff-only origin main
 git status --short
 ```
 
-Update `CHANGELOG.md` before bumping the version:
+Bump the version without committing. Use `patch`, `minor`, `major`, or an
+explicit version number:
+
+```sh
+gem bump --version patch --no-commit
+```
+
+This updates `lib/specwrk/version.rb` while leaving the release changes
+uncommitted. Update `CHANGELOG.md` using the new version:
 
 1. Change the Unreleased comparison link to start at the new version.
 2. Add a dated section for the new version.
 3. Move the Unreleased entries into that section.
-4. Stage the changelog so `gem bump` includes it in the version commit.
+
+Stage the version, changelog, and any release documentation, then create the
+version commit:
 
 ```sh
-git add CHANGELOG.md
+git add lib/specwrk/version.rb CHANGELOG.md RELEASING.md
+git commit -m "Bump specwrk to VERSION"
 ```
 
-Bump the version. Use `patch`, `minor`, `major`, or an explicit version number:
-
-```sh
-gem bump --version patch
-```
-
-This updates `lib/specwrk/version.rb` and creates a commit such as
-`Bump specwrk to 0.19.4`. Confirm that the commit contains both the version and
-changelog updates:
+Replace `VERSION` with the new version, for example `0.19.4`. Confirm that the
+commit contains the version and changelog updates:
 
 ```sh
 git show --stat --oneline HEAD
@@ -87,8 +91,8 @@ The release task requires a clean tracked worktree and then:
 3. Pushes `main` and the tag to `origin`.
 4. Pushes the gem to RubyGems.org.
 
-Use `gem bump` only for the version commit; use `bundle exec rake release`, not
-`gem release`, for publishing this project.
+Use `gem bump` only to update the version file; use `bundle exec rake release`,
+not `gem release`, for publishing this project.
 
 If the RubyGems push fails after the tag was pushed, fix the authentication or
 network problem and rerun `bundle exec rake release`. The task recognizes the

@@ -1,7 +1,12 @@
 # Changelog
 
 ## Unreleased  
-[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.19.3...main)  
+[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.19.4...main)  
+
+## v0.19.4 — 2026-08-23  
+[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.19.3...v0.19.4)  
+- Return HTTP 423 on lock contention and retry clients with jitter — [#189](https://github.com/danielwestendorf/specwrk/pull/189) by [@danielwestendorf](https://github.com/danielwestendorf)  
+- Document the gem and Docker release process — [#190](https://github.com/danielwestendorf/specwrk/pull/190) by [@danielwestendorf](https://github.com/danielwestendorf)  
 
 ## v0.19.3 — 2026-07-26  
 [Compare](https://github.com/danielwestendorf/specwrk/compare/v0.19.2...v0.19.3)  
