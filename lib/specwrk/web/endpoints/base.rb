@@ -30,6 +30,8 @@ module Specwrk
           with_response.tap do |response|
             response[1]["x-specwrk-status"] = worker_status.to_s
           end
+        rescue Store::LockUnavailableError
+          locked
         end
 
         def with_response
@@ -53,6 +55,14 @@ module Specwrk
             [200, {}, []]
           else
             [200, {"content-type" => "text/plain"}, ["OK, 'ol chap"]]
+          end
+        end
+
+        def locked
+          if request.head?
+            [423, {}, []]
+          else
+            [423, {"content-type" => "text/plain"}, ["Locked. Try again later."]]
           end
         end
 
