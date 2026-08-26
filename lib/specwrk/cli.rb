@@ -167,9 +167,10 @@ module Specwrk
 
       desc "Seed the server with a list of specs for the run"
       option :max_retries, default: 0, desc: "Number of times an example will be re-run should it fail"
+      option :target_bucket_timing_duration, default: ENV.fetch("SPECWRK_TARGET_BUCKET_TIMING_DURATION", "0"), desc: "Target runtime duration per bucket in seconds, overriding the average timings calculation. Overrides SPECWRK_TARGET_BUCKET_TIMING_DURATION"
       argument :dir, type: :array, required: false, desc: "Relative spec directory to run against, default: spec/"
 
-      def call(max_retries:, dir:, **args)
+      def call(max_retries:, dir:, target_bucket_timing_duration:, **args)
         dir = ["spec"] if dir.length.zero?
 
         self.class.setup(**args)
@@ -178,10 +179,12 @@ module Specwrk
         require "specwrk/client"
 
         ENV["SPECWRK_SEED"] = "1"
+        target_bucket_timing_duration = Float(target_bucket_timing_duration)
+        ENV["SPECWRK_TARGET_BUCKET_TIMING_DURATION"] = target_bucket_timing_duration.to_s
         examples = ListExamples.new(dir).examples
 
         Client.wait_for_server!
-        Client.new.seed(examples, max_retries)
+        Client.new.seed(examples, max_retries, target_bucket_timing_duration: target_bucket_timing_duration)
         file_count = examples.group_by { |e| e[:file_path] }.keys.size
         puts "🌱 Seeded #{examples.size} examples across #{file_count} files"
       rescue Errno::ECONNREFUSED

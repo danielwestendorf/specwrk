@@ -19,6 +19,17 @@ module Specwrk
       @run_time_bucket_maximum ||= self[RUN_TIME_BUCKET_MAXIMUM_KEY]
     end
 
+    def update_run_time_bucket_maximum(calculated_run_time_bucket_maximum, target_bucket_timing_duration: 0)
+      target_bucket_timing_duration = target_bucket_timing_duration.to_f
+
+      if target_bucket_timing_duration.positive?
+        self.run_time_bucket_maximum = target_bucket_timing_duration
+      else
+        run_time_bucket_maximums = [run_time_bucket_maximum, calculated_run_time_bucket_maximum.to_f].compact
+        self.run_time_bucket_maximum = run_time_bucket_maximums.sum.to_f / run_time_bucket_maximums.length.to_f
+      end
+    end
+
     def max_retries=(val)
       @max_retries = self[MAX_RETRIES_KEY] = val
     end

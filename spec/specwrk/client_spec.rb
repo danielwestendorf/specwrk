@@ -348,11 +348,12 @@ RSpec.describe Specwrk::Client do
   end
 
   describe "#seed" do
-    subject { client.seed(examples, max_retries) }
+    subject { client.seed(examples, max_retries, **options) }
 
     let(:client) { described_class.new }
     let(:examples) { [{id: 1}] }
     let(:max_retries) { 5 }
+    let(:options) { {} }
 
     context "when response is 200" do
       before do
@@ -362,6 +363,24 @@ RSpec.describe Specwrk::Client do
       end
 
       it { is_expected.to be true }
+
+      it "sends zero as the default target bucket timing duration" do
+        subject
+
+        expect(WebMock).to have_requested(:post, "#{base_uri}/seed")
+          .with(body: {max_retries: 5, examples: examples, target_bucket_timing_duration: 0}.to_json)
+      end
+
+      context "with a target bucket timing duration" do
+        let(:options) { {target_bucket_timing_duration: 12.5} }
+
+        it "includes the duration in the seed payload" do
+          subject
+
+          expect(WebMock).to have_requested(:post, "#{base_uri}/seed")
+            .with(body: {max_retries: 5, examples: examples, target_bucket_timing_duration: 12.5}.to_json)
+        end
+      end
     end
 
     context "when response is error" do

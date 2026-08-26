@@ -69,6 +69,22 @@ RSpec.describe Specwrk::Web::Endpoints::Seed do
 
     it { expect { subject }.to change { pending.reload.run_time_bucket_maximum }.from(nil).to(0.7) }
 
+    context "with a target bucket timing duration" do
+      let(:body) do
+        JSON.generate(
+          target_bucket_timing_duration: 10.5,
+          examples: [
+            {id: "a.rb:1", file_path: "a.rb"},
+            {id: "a.rb:2", file_path: "a.rb"}
+          ]
+        )
+      end
+
+      it "uses the target instead of the calculated timing average" do
+        expect { subject }.to change { pending.reload.run_time_bucket_maximum }.from(nil).to(10.5)
+      end
+    end
+
     it "creates buckets grouped by expected run time" do
       subject
 
