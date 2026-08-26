@@ -116,6 +116,7 @@ Options:
   --timeout=VALUE, -t VALUE         # The amount of time to wait for the server to respond. Overrides SPECWRK_TIMEOUT, default: "5"
   --network-retries=VALUE           # The number of times to retry in the event of a network failure. Overrides SPECWRK_NETWORK_RETRIES, default: "1"
   --max-retries=VALUE               # Number of times an example will be re-run should it fail, default: 0
+  --target-bucket-timing-duration=VALUE  # Target runtime duration per bucket in seconds, overriding the average timings calculation. Overrides SPECWRK_TARGET_BUCKET_TIMING_DURATION, default: "0"
   --help, -h                        # Print this help
 ```
 

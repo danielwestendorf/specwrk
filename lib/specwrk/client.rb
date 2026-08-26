@@ -119,8 +119,12 @@ module Specwrk
       end
     end
 
-    def seed(examples, max_retries)
-      response = post "/seed", body: {max_retries: max_retries, examples: examples}.to_json
+    def seed(examples, max_retries, target_bucket_timing_duration: 0)
+      response = post "/seed", body: {
+        max_retries: max_retries,
+        examples: examples,
+        target_bucket_timing_duration: target_bucket_timing_duration
+      }.to_json
 
       (response.code == "200") ? true : raise(UnhandledResponseError.new("#{response.code}: #{response.body}"))
     end

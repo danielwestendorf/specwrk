@@ -32,6 +32,33 @@ RSpec.describe Specwrk::PendingStore do
     it { is_expected.to eq(4) }
   end
 
+  describe "#update_run_time_bucket_maximum" do
+    subject do
+      instance.update_run_time_bucket_maximum(
+        4,
+        target_bucket_timing_duration: target_bucket_timing_duration
+      )
+    end
+
+    before { instance.run_time_bucket_maximum = 2 }
+
+    context "when the target bucket timing duration is zero" do
+      let(:target_bucket_timing_duration) { 0 }
+
+      it "uses the existing average timing behavior" do
+        expect { subject }.to change(instance, :run_time_bucket_maximum).from(2).to(3.0)
+      end
+    end
+
+    context "when the target bucket timing duration is positive" do
+      let(:target_bucket_timing_duration) { 10.5 }
+
+      it "overrides the calculated timing" do
+        expect { subject }.to change(instance, :run_time_bucket_maximum).from(2).to(10.5)
+      end
+    end
+  end
+
   describe "#max_retries=" do
     subject { instance.max_retries = 3 }
 
