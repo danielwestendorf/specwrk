@@ -1,7 +1,12 @@
 # Changelog
 
 ## Unreleased  
-[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.20.1...main)  
+[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.20.2...main)  
+
+## v0.20.2 — 2026-08-27  
+[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.20.1...v0.20.2)  
+- Add a seed option for configuring the target bucket timing duration — [#191](https://github.com/danielwestendorf/specwrk/pull/191) by [@danielwestendorf](https://github.com/danielwestendorf)  
+- Print an indicator while workers wait for outstanding examples to finish — [#192](https://github.com/danielwestendorf/specwrk/pull/192) by [@danielwestendorf](https://github.com/danielwestendorf)  
 
 ## v0.20.1 — 2026-08-23  
 [Compare](https://github.com/danielwestendorf/specwrk/compare/v0.20.0...v0.20.1)  
