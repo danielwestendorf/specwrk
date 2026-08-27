@@ -173,6 +173,9 @@ adjustments to avoid conflicting port usage or database/state mutations.
 
 `specwrk` workers will have `TEST_ENV_NUMBER={i}` set to help you configure approriately.
 
+Workers print `W` without a newline while waiting for outstanding examples to finish. Set
+`SPECWRK_WAITING_OUTPUT=0` to disable this output.
+
 ### Rails
 Rails has had easy multi-process test setup for a while now by creating unique test databases per process. For my rails v7.2 app which uses PostgreSQL and Capybara, I made these changes to my `spec/rails_helper.rb`:
 

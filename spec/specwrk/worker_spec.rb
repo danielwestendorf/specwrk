@@ -200,6 +200,10 @@ RSpec.describe Specwrk::Worker do
         expect(client).to receive(:worker_status)
           .and_return(0)
 
+        expect($stdout).to receive(:printf)
+          .with("W")
+          .exactly(4).times
+
         completed = false
         expect(instance).to receive(:sleep)
           .with(0.5)
@@ -225,6 +229,27 @@ RSpec.describe Specwrk::Worker do
 
         expect(subject).to eq(0)
         expect(completed).to eq(true) # ensures the loop was broken in the way we expected
+      end
+
+      it "doesn't print waiting output when SPECWRK_WAITING_OUTPUT is disabled" do
+        stub_const("ENV", ENV.to_h.merge("SPECWRK_WAITING_OUTPUT" => "0"))
+
+        expect(client).to receive(:worker_status)
+          .and_return(0)
+
+        expect($stdout).not_to receive(:printf)
+        expect(instance).to receive(:sleep)
+          .with(0.5)
+
+        count = 0
+        expect(instance).to receive(:execute).twice do
+          count += 1
+
+          raise Specwrk::NoMoreExamplesError if count == 1
+          raise Specwrk::CompletedAllExamplesError
+        end
+
+        expect(subject).to eq(0)
       end
     end
   end

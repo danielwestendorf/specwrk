@@ -40,6 +40,7 @@ module Specwrk
         # Wait for the other processes (workers) on the same host to finish
         # This will cause workers to 'hang' until all work has been completed
         # TODO: break here if all the other worker processes on this host are done executing examples
+        $stdout.printf "W" unless ENV.fetch("SPECWRK_WAITING_OUTPUT", "1") == "0"
         sleep 0.5
       rescue WaitingForSeedError
         @seed_wait_count ||= 0
