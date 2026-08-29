@@ -66,6 +66,26 @@ RSpec.describe Specwrk::Worker::Executor do
 
       expect(instance.run(examples)).to eq("🇺🇸!Big Success!🇺🇸")
     end
+
+    it "runs before_worker_examples_execute before interacting with the runner and yields the examples" do
+      calls = []
+      allow(instance).to receive(:reset!)
+      allow(RSpec::Core::ConfigurationOptions).to receive(:new).and_return(options_dbl)
+      allow(RSpec::Core::Runner).to receive(:new).with(options_dbl) do
+        calls << :runner
+        runner_dbl
+      end
+      allow(runner_dbl).to receive(:run)
+      Specwrk.before_worker_examples_execute do |hook_examples|
+        calls << [:hook, hook_examples]
+      end
+
+      instance.run(examples)
+
+      expect(calls[0][0]).to eq(:hook)
+      expect(calls[0][1]).to be(examples)
+      expect(calls[1]).to eq(:runner)
+    end
   end
 
   describe "#reset!" do

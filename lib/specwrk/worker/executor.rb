@@ -25,6 +25,7 @@ module Specwrk
         example_ids = examples.map { |example| example[:id] }
 
         options = RSpec::Core::ConfigurationOptions.new ["--format", "Specwrk::Worker::NullFormatter"] + example_ids
+        Hooks.run(:before_worker_examples_execute, examples)
         RSpec::Core::Runner.new(options).run($stderr, $stdout)
       end
 
