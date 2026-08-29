@@ -45,6 +45,7 @@ module Specwrk
             "SPECWRK_FINAL_FD" => writer.fileno.to_s
           )
 
+          Hooks.run(:before_worker_fork)
           Process.spawn(
             env, RbConfig.ruby, "-e", WORKER_INIT_SCRIPT,
             writer.fileno => writer,
