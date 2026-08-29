@@ -15,6 +15,10 @@ module Specwrk
         nil
       end
 
+      def load_file(file)
+        Kernel.load(file) if file && File.file?(file)
+      end
+
       def reset!
         @hooks = nil
       end

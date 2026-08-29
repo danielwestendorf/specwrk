@@ -169,7 +169,9 @@ Options:
 
 ## Lifecycle hooks
 
-Lifecycle hooks run synchronously in the process performing the corresponding work. Hooks are process-local, so hooks that run in spawned child processes must be registered by code loaded in that child.
+Lifecycle hooks run synchronously in the process performing the corresponding work. Add hook registrations to `Specwrk.hooks.rb` in the directory where you run `specwrk`; the file is loaded automatically by the `seed`, `work`, `serve`, `start`, and `watch` commands. Use `--hooks=path/to/hooks.rb` to load a different file.
+
+The hooks file is ordinary Ruby and is loaded into the parent, server, seed, and worker processes as applicable. Hooks remain process-local and are not serialized between processes.
 
 | Hook Method | Description | Arguments |
 | --- | --- | --- |

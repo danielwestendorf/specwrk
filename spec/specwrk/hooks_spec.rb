@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "tmpdir"
+
 RSpec.describe Specwrk::Hooks do
   describe ".register" do
     it "registers multiple hooks under a name in order" do
@@ -109,6 +111,27 @@ RSpec.describe Specwrk::Hooks do
       described_class.run(:before_work)
 
       expect(calls).to be_empty
+    end
+  end
+
+  describe ".load_file" do
+    it "loads hook registrations from an existing Ruby file" do
+      Dir.mktmpdir("specwrk-hooks") do |dir|
+        file = File.join(dir, "hooks.rb")
+        File.write(file, <<~RUBY)
+          Specwrk::Hooks.register(:loaded_from_file) { |calls| calls << :loaded }
+        RUBY
+        calls = []
+
+        described_class.load_file(file)
+        described_class.run(:loaded_from_file, calls)
+
+        expect(calls).to eq([:loaded])
+      end
+    end
+
+    it "ignores a missing file" do
+      expect(described_class.load_file("missing-hooks.rb")).to be_nil
     end
   end
 end

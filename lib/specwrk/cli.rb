@@ -14,9 +14,24 @@ module Specwrk
   module CLI
     extend Dry::CLI::Registry
 
+    module HooksConfigurable
+      extend Hookable
+
+      on_included do |base|
+        base.unique_option :hooks, type: :string, default: "Specwrk.hooks.rb", desc: "Path to lifecycle hooks configuration"
+      end
+
+      on_setup do |hooks: "Specwrk.hooks.rb", **|
+        hooks_file = Pathname.new(hooks).expand_path(Dir.pwd).to_s
+        ENV["SPECWRK_HOOKS_FILE"] = hooks_file
+        Hooks.load_file(hooks_file)
+      end
+    end
+
     module WorkerProcesses
       WORKER_INIT_SCRIPT = <<~RUBY
         require "specwrk"
+        Specwrk::Hooks.load_file(ENV["SPECWRK_HOOKS_FILE"])
         Specwrk::Hooks.run(:after_worker_fork)
 
         writer = IO.for_fd(Integer(ENV.fetch("SPECWRK_FINAL_FD")))
@@ -169,6 +184,7 @@ module Specwrk
 
     class Seed < Dry::CLI::Command
       include Clientable
+      include HooksConfigurable
 
       desc "Seed the server with a list of specs for the run"
       option :max_retries, default: 0, desc: "Number of times an example will be re-run should it fail"
@@ -204,6 +220,7 @@ module Specwrk
     class Work < Dry::CLI::Command
       include Workable
       include Clientable
+      include HooksConfigurable
 
       desc "Start one or more worker processes"
 
@@ -234,6 +251,7 @@ module Specwrk
 
     class Serve < Dry::CLI::Command
       include Servable
+      include HooksConfigurable
 
       desc "Start a queue server"
       option :single_run, type: :boolean, default: false, desc: "Act on shutdown requests from clients"
@@ -254,9 +272,12 @@ module Specwrk
       include Clientable
       include Workable
       include Servable
+      include HooksConfigurable
 
       SEED_INIT_SCRIPT = <<~'RUBY'
         require "json"
+        require "specwrk"
+        Specwrk::Hooks.load_file(ENV["SPECWRK_HOOKS_FILE"])
         require "specwrk/list_examples"
         require "specwrk/client"
 
@@ -355,8 +376,11 @@ module Specwrk
     class Watch < Dry::CLI::Command
       include WorkerProcesses
       include PortDiscoverable
+      include HooksConfigurable
 
       SEED_LOOP_INIT_SCRIPT = <<~RUBY
+        require "specwrk"
+        Specwrk::Hooks.load_file(ENV["SPECWRK_HOOKS_FILE"])
         require "specwrk/ipc"
         require "specwrk/seed_loop"
 
@@ -385,6 +409,8 @@ module Specwrk
         ENV["SPECWRK_MAX_BUCKET_SIZE"] = "1"
         ENV["SPECWRK_COUNT"] = count.to_s
         ENV["SPECWRK_RUN"] = "watch"
+
+        self.class.setup(**args)
 
         web_pid
 

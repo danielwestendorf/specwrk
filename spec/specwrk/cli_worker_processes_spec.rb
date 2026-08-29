@@ -7,20 +7,24 @@ require "specwrk/cli"
 RSpec.describe Specwrk::CLI::WorkerProcesses do
   let(:instance) { Class.new { include Specwrk::CLI::WorkerProcesses }.new }
 
-  def run_worker_with(setup_source)
+  def run_worker_with(setup_source, hooks_source: nil)
     Dir.mktmpdir("worker_hooks") do |dir|
       setup_path = File.join(dir, "setup.rb")
+      hooks_path = File.join(dir, "hooks.rb")
       output_path = File.join(dir, "output")
       File.write(setup_path, setup_source)
+      File.write(hooks_path, hooks_source) if hooks_source
 
       reader, writer = IO.pipe
       rubyopt = [ENV["RUBYOPT"], "-r#{setup_path}"].compact.join(" ")
+      env = {
+        "RUBYOPT" => rubyopt,
+        "SPECWRK_FINAL_FD" => writer.fileno.to_s,
+        "WORKER_HOOK_OUTPUT" => output_path
+      }
+      env["SPECWRK_HOOKS_FILE"] = hooks_path if hooks_source
       pid = Process.spawn(
-        {
-          "RUBYOPT" => rubyopt,
-          "SPECWRK_FINAL_FD" => writer.fileno.to_s,
-          "WORKER_HOOK_OUTPUT" => output_path
-        },
+        env,
         RbConfig.ruby,
         "-I", File.expand_path("../../lib", __dir__),
         "-e", described_class::WORKER_INIT_SCRIPT,
@@ -79,6 +83,23 @@ RSpec.describe Specwrk::CLI::WorkerProcesses do
       expect(result[:status]).to be_success
       expect(result[:output]).to eq(result[:pid].to_s)
       expect(result[:pid]).not_to eq(parent_pid)
+    end
+
+    it "loads hooks from the configured file inside the spawned child process" do
+      result = run_worker_with(
+        <<~RUBY,
+          require "specwrk"
+        RUBY
+        hooks_source: <<~RUBY
+          Specwrk.after_worker_fork do
+            File.write(ENV.fetch("WORKER_HOOK_OUTPUT"), Process.pid)
+            exit(0)
+          end
+        RUBY
+      )
+
+      expect(result[:status]).to be_success
+      expect(result[:output]).to eq(result[:pid].to_s)
     end
 
     it "runs before_worker_exit inside the worker after work completes" do
