@@ -92,6 +92,24 @@ RSpec.describe Specwrk do
     end
   end
 
+  describe ".after_worker_examples_execute" do
+    it "registers an after_worker_examples_execute hook and returns the block" do
+      examples = Object.new
+      received = nil
+      hook = proc { |value| received = value }
+
+      expect(described_class.after_worker_examples_execute(&hook)).to be(hook)
+
+      Specwrk::Hooks.run(:after_worker_examples_execute, examples)
+      expect(received).to be(examples)
+    end
+
+    it "requires a block" do
+      expect { described_class.after_worker_examples_execute }
+        .to raise_error(ArgumentError, "a block is required")
+    end
+  end
+
   describe ".wait_for_pids_exit" do
     subject { described_class.wait_for_pids_exit(pids) }
 

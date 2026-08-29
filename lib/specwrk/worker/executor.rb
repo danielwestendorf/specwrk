@@ -26,7 +26,9 @@ module Specwrk
 
         options = RSpec::Core::ConfigurationOptions.new ["--format", "Specwrk::Worker::NullFormatter"] + example_ids
         Hooks.run(:before_worker_examples_execute, examples)
-        RSpec::Core::Runner.new(options).run($stderr, $stdout)
+        RSpec::Core::Runner.new(options).run($stderr, $stdout).tap do
+          Hooks.run(:after_worker_examples_execute, examples)
+        end
       end
 
       # https://github.com/skroutz/rspecq/blob/341383ce3ca25f42fad5483cbb6a00ba1c405570/lib/rspecq/worker.rb#L208-L224

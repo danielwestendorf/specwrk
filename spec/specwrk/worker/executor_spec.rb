@@ -86,6 +86,25 @@ RSpec.describe Specwrk::Worker::Executor do
       expect(calls[0][1]).to be(examples)
       expect(calls[1]).to eq(:runner)
     end
+
+    it "runs after_worker_examples_execute after the runner and yields the examples" do
+      calls = []
+      allow(instance).to receive(:reset!)
+      allow(RSpec::Core::ConfigurationOptions).to receive(:new).and_return(options_dbl)
+      allow(RSpec::Core::Runner).to receive(:new).with(options_dbl).and_return(runner_dbl)
+      allow(runner_dbl).to receive(:run) do
+        calls << :runner
+        :runner_result
+      end
+      Specwrk.after_worker_examples_execute do |hook_examples|
+        calls << [:hook, hook_examples]
+      end
+
+      expect(instance.run(examples)).to eq(:runner_result)
+      expect(calls[0]).to eq(:runner)
+      expect(calls[1][0]).to eq(:hook)
+      expect(calls[1][1]).to be(examples)
+    end
   end
 
   describe "#reset!" do
