@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "specwrk/version"
+require "specwrk/hooks"
 
 module Specwrk
   Error = Class.new(StandardError)
