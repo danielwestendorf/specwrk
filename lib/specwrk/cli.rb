@@ -221,7 +221,10 @@ module Specwrk
       end
 
       def wait_for_workers_exit
-        @exited_pids = Specwrk.wait_for_pids_exit(@worker_pids)
+        Specwrk.wait_for_pids_exit(@worker_pids).tap do |exited_pids|
+          @exited_pids = exited_pids
+          Hooks.run(:after_all_workers_exit, status)
+        end
       end
 
       def status

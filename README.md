@@ -180,6 +180,7 @@ Lifecycle hooks run synchronously in the process performing the corresponding wo
 | `Specwrk.before_worker_examples_execute(&blk)` | Runs in a worker before an examples group is passed to the RSpec runner | `examples` RSpec examples in the group |
 | `Specwrk.after_worker_examples_execute(&blk)` | Runs in a worker after an examples group is executed by the RSpec runner | `examples` RSpec examples in the group |
 | `Specwrk.before_worker_exit(&blk)` | Runs in each worker after work completes and before the process exits | `status` Worker exit status |
+| `Specwrk.after_all_workers_exit(&blk)` | Runs in the parent process after all workers exit | `status` Overall worker exit status |
 
 ## Configuring your test environment
 If your test suite tracks state, starts servers, etc. and you plan on running many processes on the same node, you'll need to make

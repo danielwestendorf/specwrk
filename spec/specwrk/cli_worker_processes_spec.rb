@@ -117,3 +117,20 @@ RSpec.describe Specwrk::CLI::WorkerProcesses do
     end
   end
 end
+
+RSpec.describe Specwrk::CLI::Work do
+  describe "#wait_for_workers_exit" do
+    it "runs after_all_workers_exit with the status after all workers exit" do
+      instance = described_class.new
+      worker_pids = [123, 456]
+      exited_pids = {123 => 0, 456 => 1}
+      instance.instance_variable_set(:@worker_pids, worker_pids)
+      allow(Specwrk).to receive(:wait_for_pids_exit).with(worker_pids).and_return(exited_pids)
+      received = nil
+      Specwrk.after_all_workers_exit { |status| received = status }
+
+      expect(instance.wait_for_workers_exit).to be(exited_pids)
+      expect(received).to eq(instance.status)
+    end
+  end
+end
