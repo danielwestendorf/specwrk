@@ -110,6 +110,24 @@ RSpec.describe Specwrk do
     end
   end
 
+  describe ".before_worker_exit" do
+    it "registers a before_worker_exit hook and returns the block" do
+      status = Object.new
+      received = nil
+      hook = proc { |value| received = value }
+
+      expect(described_class.before_worker_exit(&hook)).to be(hook)
+
+      Specwrk::Hooks.run(:before_worker_exit, status)
+      expect(received).to be(status)
+    end
+
+    it "requires a block" do
+      expect { described_class.before_worker_exit }
+        .to raise_error(ArgumentError, "a block is required")
+    end
+  end
+
   describe ".wait_for_pids_exit" do
     subject { described_class.wait_for_pids_exit(pids) }
 

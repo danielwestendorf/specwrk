@@ -44,6 +44,10 @@ module Specwrk
       Hooks.register(:after_worker_examples_execute, &block)
     end
 
+    def before_worker_exit(&block)
+      Hooks.register(:before_worker_exit, &block)
+    end
+
     def wait_for_pids_exit(pids)
       exited_pids = {}
 

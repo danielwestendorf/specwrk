@@ -34,6 +34,7 @@ module Specwrk
         end
 
         status = Specwrk::Worker.run!
+        Specwrk::Hooks.run(:before_worker_exit, status)
         $final_output.close # standard:disable Style/GlobalVars
         exit(status)
       RUBY
