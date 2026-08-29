@@ -176,6 +176,7 @@ Lifecycle hooks run synchronously in the process performing the corresponding wo
 | `Specwrk.before_seed(&blk)` | Runs before seeding examples to the server | none |
 | `Specwrk.after_seed(&blk)` | Runs after seeding examples to the server | `examples` RSpec examples |
 | `Specwrk.before_server_seed(&blk)` | Runs in the server before seeding examples | none |
+| `Specwrk.after_server_seed(&blk)` | Runs in the server after seeding examples | `examples` RSpec examples |
 | `Specwrk.before_worker_fork(&blk)` | Runs in the parent process before spawning each worker | none |
 | `Specwrk.after_worker_fork(&blk)` | Runs in each worker process immediately after it is spawned | none |
 | `Specwrk.before_worker_examples_execute(&blk)` | Runs in a worker before an examples group is passed to the RSpec runner | `examples` RSpec examples in the group |

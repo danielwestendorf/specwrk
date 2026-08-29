@@ -26,6 +26,7 @@ module Specwrk
             pending.merge!(examples_with_run_times)
           end
 
+          Hooks.run(:after_server_seed, payload[:examples])
           ok
         end
 

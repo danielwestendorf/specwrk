@@ -32,6 +32,10 @@ module Specwrk
       Hooks.register(:before_server_seed, &block)
     end
 
+    def after_server_seed(&block)
+      Hooks.register(:after_server_seed, &block)
+    end
+
     def before_worker_fork(&block)
       Hooks.register(:before_worker_fork, &block)
     end
