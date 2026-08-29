@@ -5,6 +5,182 @@ RSpec.describe Specwrk do
     expect(Specwrk::VERSION).not_to be nil
   end
 
+  describe ".before_seed" do
+    it "registers a before_seed hook and returns the block" do
+      calls = []
+      hook = proc { calls << :called }
+
+      expect(described_class.before_seed(&hook)).to be(hook)
+
+      Specwrk::Hooks.run(:before_seed)
+      expect(calls).to eq([:called])
+    end
+
+    it "requires a block" do
+      expect { described_class.before_seed }
+        .to raise_error(ArgumentError, "a block is required")
+    end
+  end
+
+  describe ".after_seed" do
+    it "registers an after_seed hook and returns the block" do
+      examples = Object.new
+      received = nil
+      hook = proc { |value| received = value }
+
+      expect(described_class.after_seed(&hook)).to be(hook)
+
+      Specwrk::Hooks.run(:after_seed, examples)
+      expect(received).to be(examples)
+    end
+
+    it "requires a block" do
+      expect { described_class.after_seed }
+        .to raise_error(ArgumentError, "a block is required")
+    end
+  end
+
+  describe ".before_server_seed" do
+    it "registers a before_server_seed hook and returns the block" do
+      calls = []
+      hook = proc { calls << :called }
+
+      expect(described_class.before_server_seed(&hook)).to be(hook)
+
+      Specwrk::Hooks.run(:before_server_seed)
+      expect(calls).to eq([:called])
+    end
+
+    it "requires a block" do
+      expect { described_class.before_server_seed }
+        .to raise_error(ArgumentError, "a block is required")
+    end
+  end
+
+  describe ".after_server_seed" do
+    it "registers an after_server_seed hook and returns the block" do
+      examples = Object.new
+      received = nil
+      hook = proc { |value| received = value }
+
+      expect(described_class.after_server_seed(&hook)).to be(hook)
+
+      Specwrk::Hooks.run(:after_server_seed, examples)
+      expect(received).to be(examples)
+    end
+
+    it "requires a block" do
+      expect { described_class.after_server_seed }
+        .to raise_error(ArgumentError, "a block is required")
+    end
+  end
+
+  describe ".before_worker_fork" do
+    it "registers a before_worker_fork hook and returns the block" do
+      calls = []
+      hook = proc { calls << :called }
+
+      expect(described_class.before_worker_fork(&hook)).to be(hook)
+
+      Specwrk::Hooks.run(:before_worker_fork)
+      expect(calls).to eq([:called])
+    end
+
+    it "requires a block" do
+      expect { described_class.before_worker_fork }
+        .to raise_error(ArgumentError, "a block is required")
+    end
+  end
+
+  describe ".after_worker_fork" do
+    it "registers an after_worker_fork hook and returns the block" do
+      calls = []
+      hook = proc { calls << :called }
+
+      expect(described_class.after_worker_fork(&hook)).to be(hook)
+
+      Specwrk::Hooks.run(:after_worker_fork)
+      expect(calls).to eq([:called])
+    end
+
+    it "requires a block" do
+      expect { described_class.after_worker_fork }
+        .to raise_error(ArgumentError, "a block is required")
+    end
+  end
+
+  describe ".before_worker_examples_execute" do
+    it "registers a before_worker_examples_execute hook and returns the block" do
+      examples = Object.new
+      received = nil
+      hook = proc { |value| received = value }
+
+      expect(described_class.before_worker_examples_execute(&hook)).to be(hook)
+
+      Specwrk::Hooks.run(:before_worker_examples_execute, examples)
+      expect(received).to be(examples)
+    end
+
+    it "requires a block" do
+      expect { described_class.before_worker_examples_execute }
+        .to raise_error(ArgumentError, "a block is required")
+    end
+  end
+
+  describe ".after_worker_examples_execute" do
+    it "registers an after_worker_examples_execute hook and returns the block" do
+      examples = Object.new
+      received = nil
+      hook = proc { |value| received = value }
+
+      expect(described_class.after_worker_examples_execute(&hook)).to be(hook)
+
+      Specwrk::Hooks.run(:after_worker_examples_execute, examples)
+      expect(received).to be(examples)
+    end
+
+    it "requires a block" do
+      expect { described_class.after_worker_examples_execute }
+        .to raise_error(ArgumentError, "a block is required")
+    end
+  end
+
+  describe ".before_worker_exit" do
+    it "registers a before_worker_exit hook and returns the block" do
+      status = Object.new
+      received = nil
+      hook = proc { |value| received = value }
+
+      expect(described_class.before_worker_exit(&hook)).to be(hook)
+
+      Specwrk::Hooks.run(:before_worker_exit, status)
+      expect(received).to be(status)
+    end
+
+    it "requires a block" do
+      expect { described_class.before_worker_exit }
+        .to raise_error(ArgumentError, "a block is required")
+    end
+  end
+
+  describe ".after_all_workers_exit" do
+    it "registers an after_all_workers_exit hook and returns the block" do
+      status = Object.new
+      received = nil
+      hook = proc { |value| received = value }
+
+      expect(described_class.after_all_workers_exit(&hook)).to be(hook)
+
+      Specwrk::Hooks.run(:after_all_workers_exit, status)
+      expect(received).to be(status)
+    end
+
+    it "requires a block" do
+      expect { described_class.after_all_workers_exit }
+        .to raise_error(ArgumentError, "a block is required")
+    end
+  end
+
   describe ".wait_for_pids_exit" do
     subject { described_class.wait_for_pids_exit(pids) }
 

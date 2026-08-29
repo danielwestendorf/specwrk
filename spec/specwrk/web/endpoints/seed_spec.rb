@@ -9,6 +9,32 @@ RSpec.describe Specwrk::Web::Endpoints::Seed do
   let(:request_method) { "POST" }
   let(:body) { JSON.generate(max_retries: 42, examples: [{id: "a.rb:1", file_path: "a.rb", run_time: 0.1}]) }
 
+  it "runs before_server_seed before resetting server state" do
+    existing_processing_data = {"existing.rb:1": {id: "existing.rb:1"}}
+    processing.merge!(existing_processing_data)
+    processing_seen_by_hook = nil
+    Specwrk.before_server_seed { processing_seen_by_hook = processing.reload.to_h }
+
+    subject
+
+    expect(processing_seen_by_hook.keys).to eq([:"existing.rb:1"])
+    expect(processing.reload).to be_empty
+  end
+
+  it "runs after_server_seed after storing and yields the examples" do
+    received_examples = nil
+    pending_length_seen_by_hook = nil
+    Specwrk.after_server_seed do |examples|
+      received_examples = examples
+      pending_length_seen_by_hook = pending.reload.length
+    end
+
+    subject
+
+    expect(received_examples.map { |example| example[:id] }).to eq(["a.rb:1"])
+    expect(pending_length_seen_by_hook).to eq(1)
+  end
+
   context "pending store reset with examples and meta data" do
     let(:existing_pending_data) { {"b.rb:2" => {id: "b.rb:2", file_path: "b.rb", expected_run_time: 0.1}} }
 
