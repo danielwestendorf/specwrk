@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "tempfile"
+
 require "specwrk/cli"
 
 RSpec.describe Specwrk::CLI::WorkerProcesses do
@@ -31,6 +33,49 @@ RSpec.describe Specwrk::CLI::WorkerProcesses do
         [:hook, parent_pid],
         [:spawn, parent_pid]
       ])
+    end
+
+    it "runs after_worker_fork inside the spawned child process" do
+      parent_pid = Process.pid
+
+      Tempfile.create(["after_worker_fork", ".rb"]) do |setup|
+        Tempfile.create("after_worker_fork_output") do |output|
+          setup.write <<~RUBY
+            require "specwrk"
+
+            Specwrk.after_worker_fork do
+              File.write(ENV.fetch("AFTER_WORKER_FORK_OUTPUT"), Process.pid)
+              exit(0)
+            end
+          RUBY
+          setup.flush
+
+          reader, writer = IO.pipe
+          rubyopt = [ENV["RUBYOPT"], "-r#{setup.path}"].compact.join(" ")
+          pid = Process.spawn(
+            {
+              "AFTER_WORKER_FORK_OUTPUT" => output.path,
+              "RUBYOPT" => rubyopt,
+              "SPECWRK_FINAL_FD" => writer.fileno.to_s
+            },
+            RbConfig.ruby,
+            "-I", File.expand_path("../../lib", __dir__),
+            "-e", described_class::WORKER_INIT_SCRIPT,
+            writer.fileno => writer,
+            :err => File::NULL,
+            :close_others => false
+          )
+          writer.close
+
+          _, status = Process.wait2(pid)
+          reader.close
+          output.rewind
+
+          expect(status).to be_success
+          expect(output.read).to eq(pid.to_s)
+          expect(pid).not_to eq(parent_pid)
+        end
+      end
     end
   end
 

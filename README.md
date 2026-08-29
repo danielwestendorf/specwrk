@@ -169,13 +169,14 @@ Options:
 
 ## Lifecycle hooks
 
-Lifecycle hooks run synchronously in the process performing the corresponding work.
+Lifecycle hooks run synchronously in the process performing the corresponding work. Hooks are process-local, so hooks that run in spawned child processes must be registered by code loaded in that child.
 
 | Hook Method | Description | Arguments |
 | --- | --- | --- |
 | `Specwrk.before_seed(&blk)` | Runs before seeding examples to the server | none |
 | `Specwrk.after_seed(&blk)` | Runs after seeding examples to the server | `examples` RSpec examples |
 | `Specwrk.before_worker_fork(&blk)` | Runs in the parent process before spawning each worker | none |
+| `Specwrk.after_worker_fork(&blk)` | Runs in each worker process immediately after it is spawned | none |
 
 ## Configuring your test environment
 If your test suite tracks state, starts servers, etc. and you plan on running many processes on the same node, you'll need to make

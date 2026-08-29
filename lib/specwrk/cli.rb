@@ -16,6 +16,9 @@ module Specwrk
 
     module WorkerProcesses
       WORKER_INIT_SCRIPT = <<~RUBY
+        require "specwrk"
+        Specwrk::Hooks.run(:after_worker_fork)
+
         writer = IO.for_fd(Integer(ENV.fetch("SPECWRK_FINAL_FD")))
         $final_output = writer # standard:disable Style/GlobalVars
         $final_output.sync = true # standard:disable Style/GlobalVars

@@ -57,6 +57,23 @@ RSpec.describe Specwrk do
     end
   end
 
+  describe ".after_worker_fork" do
+    it "registers an after_worker_fork hook and returns the block" do
+      calls = []
+      hook = proc { calls << :called }
+
+      expect(described_class.after_worker_fork(&hook)).to be(hook)
+
+      Specwrk::Hooks.run(:after_worker_fork)
+      expect(calls).to eq([:called])
+    end
+
+    it "requires a block" do
+      expect { described_class.after_worker_fork }
+        .to raise_error(ArgumentError, "a block is required")
+    end
+  end
+
   describe ".wait_for_pids_exit" do
     subject { described_class.wait_for_pids_exit(pids) }
 
