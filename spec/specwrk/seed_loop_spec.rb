@@ -49,6 +49,26 @@ RSpec.describe Specwrk::SeedLoop do
 
         described_class.loop!(ipc)
       end
+
+      it "runs after_seed hooks after seeding and yields the examples" do
+        calls = []
+        allow(client_dbl).to receive(:seed) { calls << :seed }
+        Specwrk.after_seed { |hook_examples| calls << [:after_seed, hook_examples] }
+
+        described_class.loop!(ipc)
+
+        expect(calls[0]).to eq(:seed)
+        expect(calls[1][0]).to eq(:after_seed)
+        expect(calls[1][1]).to be(examples)
+      end
+
+      it "does not run after_seed hooks when seeding fails" do
+        Specwrk.after_seed { raise "hook ran" }
+        allow(client_dbl).to receive(:seed).and_raise(Specwrk::Error, "seed failed")
+
+        expect { described_class.loop!(ipc) }
+          .to raise_error(Specwrk::Error, "seed failed")
+      end
     end
 
     context "when ipc.read returns nil first" do

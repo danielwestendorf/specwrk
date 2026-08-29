@@ -24,6 +24,10 @@ module Specwrk
       Hooks.register(:before_seed, &block)
     end
 
+    def after_seed(&block)
+      Hooks.register(:after_seed, &block)
+    end
+
     def wait_for_pids_exit(pids)
       exited_pids = {}
 

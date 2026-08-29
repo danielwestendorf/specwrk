@@ -22,6 +22,24 @@ RSpec.describe Specwrk do
     end
   end
 
+  describe ".after_seed" do
+    it "registers an after_seed hook and returns the block" do
+      examples = Object.new
+      received = nil
+      hook = proc { |value| received = value }
+
+      expect(described_class.after_seed(&hook)).to be(hook)
+
+      Specwrk::Hooks.run(:after_seed, examples)
+      expect(received).to be(examples)
+    end
+
+    it "requires a block" do
+      expect { described_class.after_seed }
+        .to raise_error(ArgumentError, "a block is required")
+    end
+  end
+
   describe ".wait_for_pids_exit" do
     subject { described_class.wait_for_pids_exit(pids) }
 

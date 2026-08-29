@@ -19,6 +19,7 @@ module Specwrk
 
         client = Client.new
         client.seed(examples, 0)
+        Hooks.run(:after_seed, examples)
         client.close
 
         ipc.write examples.length
