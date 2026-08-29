@@ -40,6 +40,23 @@ RSpec.describe Specwrk do
     end
   end
 
+  describe ".before_server_seed" do
+    it "registers a before_server_seed hook and returns the block" do
+      calls = []
+      hook = proc { calls << :called }
+
+      expect(described_class.before_server_seed(&hook)).to be(hook)
+
+      Specwrk::Hooks.run(:before_server_seed)
+      expect(calls).to eq([:called])
+    end
+
+    it "requires a block" do
+      expect { described_class.before_server_seed }
+        .to raise_error(ArgumentError, "a block is required")
+    end
+  end
+
   describe ".before_worker_fork" do
     it "registers a before_worker_fork hook and returns the block" do
       calls = []

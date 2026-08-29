@@ -7,6 +7,7 @@ module Specwrk
     module Endpoints
       class Seed < Base
         def with_response
+          Hooks.run(:before_server_seed)
           examples_with_run_times
 
           pending.clear
