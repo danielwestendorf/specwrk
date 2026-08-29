@@ -5,6 +5,23 @@ RSpec.describe Specwrk do
     expect(Specwrk::VERSION).not_to be nil
   end
 
+  describe ".before_seed" do
+    it "registers a before_seed hook and returns the block" do
+      calls = []
+      hook = proc { calls << :called }
+
+      expect(described_class.before_seed(&hook)).to be(hook)
+
+      Specwrk::Hooks.run(:before_seed)
+      expect(calls).to eq([:called])
+    end
+
+    it "requires a block" do
+      expect { described_class.before_seed }
+        .to raise_error(ArgumentError, "a block is required")
+    end
+  end
+
   describe ".wait_for_pids_exit" do
     subject { described_class.wait_for_pids_exit(pids) }
 

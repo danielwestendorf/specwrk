@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 RSpec.describe Specwrk::Hooks do
-  before { described_class.reset! }
-
   describe ".register" do
     it "registers multiple hooks under a name in order" do
       calls = []

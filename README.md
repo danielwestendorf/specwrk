@@ -167,6 +167,14 @@ Options:
   --help, -h                        # Print this help
 ```
 
+## Lifecycle hooks
+
+Lifecycle hooks run synchronously in the process performing the corresponding work.
+
+| Hook Method | Description | Arguments |
+| --- | --- | --- |
+| `Specwrk.before_seed(&blk)` | Runs before seeding examples to the server | none |
+
 ## Configuring your test environment
 If your test suite tracks state, starts servers, etc. and you plan on running many processes on the same node, you'll need to make
 adjustments to avoid conflicting port usage or database/state mutations.

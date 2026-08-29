@@ -6,6 +6,7 @@ require "specwrk/client"
 module Specwrk
   class SeedLoop
     def self.loop!(ipc)
+      Hooks.run(:before_seed)
       Client.wait_for_server!
 
       loop do

@@ -20,6 +20,10 @@ module Specwrk
     attr_accessor :force_quit, :net_http
     attr_reader :starting_pid
 
+    def before_seed(&block)
+      Hooks.register(:before_seed, &block)
+    end
+
     def wait_for_pids_exit(pids)
       exited_pids = {}
 

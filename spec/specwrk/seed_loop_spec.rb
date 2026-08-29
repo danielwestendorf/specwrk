@@ -22,6 +22,17 @@ RSpec.describe Specwrk::SeedLoop do
         .and_return(list_examples_dbl)
     end
 
+    it "runs before_seed hooks before starting the loop" do
+      calls = []
+      Specwrk.before_seed { calls << :before_seed }
+      allow(Specwrk::Client).to receive(:wait_for_server!) { calls << :wait_for_server }
+      allow(Specwrk).to receive(:force_quit).and_return(true)
+
+      described_class.loop!(ipc)
+
+      expect(calls).to eq([:before_seed, :wait_for_server])
+    end
+
     context "with a single batch of files" do
       before do
         allow(Specwrk).to receive(:force_quit).and_return(false, true) # run once, then break
