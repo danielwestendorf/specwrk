@@ -16,6 +16,8 @@ RSpec.configure do |config|
     c.syntax = :expect
   end
 
+  config.before(:each) { Specwrk::Hooks.reset! }
+
   if ENV["TEST_ENV_NUMBER"]
     config.before(:each) { sleep 0.25 }
   end

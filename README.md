@@ -167,6 +167,25 @@ Options:
   --help, -h                        # Print this help
 ```
 
+## Lifecycle hooks
+
+Lifecycle hooks run synchronously in the process performing the corresponding work. Add hook registrations to `Specwrk.hooks.rb` in the directory where you run `specwrk`; the file is loaded automatically by the `seed`, `work`, `serve`, `start`, and `watch` commands. Use `--hooks=path/to/hooks.rb` to load a different file.
+
+The hooks file is ordinary Ruby and is loaded into the parent, server, seed, and worker processes as applicable. Hooks remain process-local and are not serialized between processes.
+
+| Hook Method | Description | Arguments |
+| --- | --- | --- |
+| `Specwrk.before_seed(&blk)` | Runs before seeding examples to the server | none |
+| `Specwrk.after_seed(&blk)` | Runs after seeding examples to the server | `examples` RSpec examples |
+| `Specwrk.before_server_seed(&blk)` | Runs in the server before seeding examples | none |
+| `Specwrk.after_server_seed(&blk)` | Runs in the server after seeding examples | `examples` RSpec examples |
+| `Specwrk.before_worker_fork(&blk)` | Runs in the parent process before spawning each worker | none |
+| `Specwrk.after_worker_fork(&blk)` | Runs in each worker process immediately after it is spawned | none |
+| `Specwrk.before_worker_examples_execute(&blk)` | Runs in a worker before an examples group is passed to the RSpec runner | `examples` RSpec examples in the group |
+| `Specwrk.after_worker_examples_execute(&blk)` | Runs in a worker after an examples group is executed by the RSpec runner | `examples` RSpec examples in the group |
+| `Specwrk.before_worker_exit(&blk)` | Runs in each worker after work completes and before the process exits | `status` Worker exit status |
+| `Specwrk.after_all_workers_exit(&blk)` | Runs in the parent process after all workers exit | `status` Overall worker exit status |
+
 ## Configuring your test environment
 If your test suite tracks state, starts servers, etc. and you plan on running many processes on the same node, you'll need to make
 adjustments to avoid conflicting port usage or database/state mutations.

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "specwrk/version"
+require "specwrk/hooks"
 
 module Specwrk
   Error = Class.new(StandardError)
@@ -18,6 +19,46 @@ module Specwrk
   class << self
     attr_accessor :force_quit, :net_http
     attr_reader :starting_pid
+
+    def before_seed(&block)
+      Hooks.register(:before_seed, &block)
+    end
+
+    def after_seed(&block)
+      Hooks.register(:after_seed, &block)
+    end
+
+    def before_server_seed(&block)
+      Hooks.register(:before_server_seed, &block)
+    end
+
+    def after_server_seed(&block)
+      Hooks.register(:after_server_seed, &block)
+    end
+
+    def before_worker_fork(&block)
+      Hooks.register(:before_worker_fork, &block)
+    end
+
+    def after_worker_fork(&block)
+      Hooks.register(:after_worker_fork, &block)
+    end
+
+    def before_worker_examples_execute(&block)
+      Hooks.register(:before_worker_examples_execute, &block)
+    end
+
+    def after_worker_examples_execute(&block)
+      Hooks.register(:after_worker_examples_execute, &block)
+    end
+
+    def before_worker_exit(&block)
+      Hooks.register(:before_worker_exit, &block)
+    end
+
+    def after_all_workers_exit(&block)
+      Hooks.register(:after_all_workers_exit, &block)
+    end
 
     def wait_for_pids_exit(pids)
       exited_pids = {}
