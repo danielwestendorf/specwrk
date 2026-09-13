@@ -1,8 +1,12 @@
 # Changelog
 
-## Unreleased  
-[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.20.2...main)  
-- Add opt-in gzip request compression and negotiated gzip responses
+## Unreleased
+[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.21.0...main)
+
+## v0.21.0 — 2026-09-13
+[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.20.2...v0.21.0)
+- Add configurable lifecycle hooks — [#193](https://github.com/danielwestendorf/specwrk/pull/193) by [@danielwestendorf](https://github.com/danielwestendorf)
+- Add opt-in gzip request compression and negotiated gzip responses — [#195](https://github.com/danielwestendorf/specwrk/pull/195) by [@danielwestendorf](https://github.com/danielwestendorf)
 
 ## v0.20.2 — 2026-08-27  
 [Compare](https://github.com/danielwestendorf/specwrk/compare/v0.20.1...v0.20.2)  
