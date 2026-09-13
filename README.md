@@ -53,6 +53,7 @@ Options:
   --run=VALUE, -r VALUE             # The run identifier for this job execution. Overrides SPECWRK_RUN, default: "main"
   --timeout=VALUE, -t VALUE         # The amount of time to wait for the server to respond. Overrides SPECWRK_TIMEOUT, default: "5"
   --network-retries=VALUE           # The number of times to retry in the event of a network failure. Overrides SPECWRK_NETWORK_RETRIES, default: "1"
+  --[no-]http-compression           # Compress large JSON request bodies sent to the server. Overrides SPECWRK_HTTP_COMPRESSION, default: false
   --id=VALUE                        # The identifier for this worker. Overrides SPECWRK_ID. If none provided one in the format of specwrk-worker-8_RAND_CHARS-COUNT_INDEX will be used
   --count=VALUE, -c VALUE           # The number of worker processes you want to start, default: 1
   --output=VALUE, -o VALUE          # Directory where worker output is stored. Overrides SPECWRK_OUT, default: ".specwrk/"
@@ -115,6 +116,7 @@ Options:
   --run=VALUE, -r VALUE             # The run identifier for this job execution. Overrides SPECWRK_RUN, default: "main"
   --timeout=VALUE, -t VALUE         # The amount of time to wait for the server to respond. Overrides SPECWRK_TIMEOUT, default: "5"
   --network-retries=VALUE           # The number of times to retry in the event of a network failure. Overrides SPECWRK_NETWORK_RETRIES, default: "1"
+  --[no-]http-compression           # Compress large JSON request bodies sent to the server. Overrides SPECWRK_HTTP_COMPRESSION, default: false
   --max-retries=VALUE               # Number of times an example will be re-run should it fail, default: 0
   --target-bucket-timing-duration=VALUE  # Target runtime duration per bucket in seconds, overriding the average timings calculation. Overrides SPECWRK_TARGET_BUCKET_TIMING_DURATION, default: "0"
   --help, -h                        # Print this help
@@ -144,6 +146,7 @@ Options:
   --run=VALUE, -r VALUE             # The run identifier for this job execution. Overrides SPECWRK_RUN, default: "main"
   --timeout=VALUE, -t VALUE         # The amount of time to wait for the server to respond. Overrides SPECWRK_TIMEOUT, default: "5"
   --network-retries=VALUE           # The number of times to retry in the event of a network failure. Overrides SPECWRK_NETWORK_RETRIES, default: "1"
+  --[no-]http-compression           # Compress large JSON request bodies sent to the server. Overrides SPECWRK_HTTP_COMPRESSION, default: false
   --help, -h                        # Print this help
 ```
 
@@ -164,6 +167,7 @@ Description:
 Options:
   --watchfile=VALUE                 # Path to watchfile configuration, default: "Specwrk.watchfile.rb"
   --count=VALUE, -c VALUE           # The number of worker processes you want to start, default: 1
+  --[no-]http-compression           # Compress large JSON request bodies sent to the server. Overrides SPECWRK_HTTP_COMPRESSION, default: false
   --help, -h                        # Print this help
 ```
 
@@ -185,6 +189,8 @@ The hooks file is ordinary Ruby and is loaded into the parent, server, seed, and
 | `Specwrk.after_worker_examples_execute(&blk)` | Runs in a worker after an examples group is executed by the RSpec runner | `examples` RSpec examples in the group |
 | `Specwrk.before_worker_exit(&blk)` | Runs in each worker after work completes and before the process exits | `status` Worker exit status |
 | `Specwrk.after_all_workers_exit(&blk)` | Runs in the parent process after all workers exit | `status` Overall worker exit status |
+
+Response compression is negotiated automatically by HTTP clients and the queue server. Request compression is disabled by default; enable it with `--http-compression` or `SPECWRK_HTTP_COMPRESSION=1` on client commands to gzip seed data and worker results that are at least 1 KiB. Set `SPECWRK_HTTP_COMPRESSION_MINIMUM_SIZE` to change this byte threshold. Upgrade the queue server before enabling request compression because it does not fall back when a server cannot decode gzip.
 
 ## Configuring your test environment
 If your test suite tracks state, starts servers, etc. and you plan on running many processes on the same node, you'll need to make

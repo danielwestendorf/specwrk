@@ -60,4 +60,49 @@ RSpec.describe Specwrk::Web::Endpoints::Base do
       it { expect(response).to eq([423, {}, []]) }
     end
   end
+
+  context "when reading request bodies" do
+    let(:request_method) { "POST" }
+    let(:body) { Zlib.gzip(JSON.generate(foo: "bar")) }
+    let(:content_encoding) { "gzip" }
+    let(:env) { super().merge("HTTP_CONTENT_ENCODING" => content_encoding) }
+    let(:endpoint_class) do
+      Class.new(described_class) do
+        def with_response
+          [200, {"content-type" => "application/json"}, [body]]
+        end
+      end
+    end
+    let(:instance) { endpoint_class.new(request) }
+
+    it "decodes a gzip request body" do
+      expect(response).to eq([200, {"content-type" => "application/json", "x-specwrk-status" => "1"}, [JSON.generate(foo: "bar")]])
+    end
+
+    context "with an identity request body" do
+      let(:body) { JSON.generate(foo: "bar") }
+      let(:content_encoding) { "identity" }
+
+      it "uses the request body unchanged" do
+        expect(response).to eq([200, {"content-type" => "application/json", "x-specwrk-status" => "1"}, [body]])
+      end
+    end
+
+    context "with malformed gzip" do
+      let(:body) { "not gzip" }
+
+      it "returns a bad request response" do
+        expect(response).to eq([400, {"content-type" => "text/plain"}, ["Invalid gzip request body"]])
+      end
+    end
+
+    context "with an unsupported content encoding" do
+      let(:body) { "encoded somehow" }
+      let(:content_encoding) { "br" }
+
+      it "returns an unsupported media type response" do
+        expect(response).to eq([415, {"content-type" => "text/plain"}, ["Unsupported content encoding"]])
+      end
+    end
+  end
 end

@@ -115,14 +115,16 @@ module Specwrk
         base.unique_option :run, type: :string, default: ENV.fetch("SPECWRK_RUN", "main"), aliases: ["-r"], desc: "The run identifier for this job execution. Overrides SPECWRK_RUN"
         base.unique_option :timeout, type: :integer, default: ENV.fetch("SPECWRK_TIMEOUT", "5"), aliases: ["-t"], desc: "The amount of time to wait for the server to respond. Overrides SPECWRK_TIMEOUT"
         base.unique_option :network_retries, type: :integer, default: ENV.fetch("SPECWRK_NETWORK_RETRIES", "1"), desc: "The number of times to retry in the event of a network failure. Overrides SPECWRK_NETWORK_RETRIES"
+        base.unique_option :http_compression, type: :boolean, default: ENV.fetch("SPECWRK_HTTP_COMPRESSION", "0") == "1", desc: "Compress large JSON request bodies sent to the server. Overrides SPECWRK_HTTP_COMPRESSION"
       end
 
-      on_setup do |uri:, key:, run:, timeout:, network_retries:, **|
+      on_setup do |uri:, key:, run:, timeout:, network_retries:, http_compression: false, **|
         ENV["SPECWRK_SRV_URI"] = uri
         ENV["SPECWRK_SRV_KEY"] = key
         ENV["SPECWRK_RUN"] = run
         ENV["SPECWRK_TIMEOUT"] = timeout
         ENV["SPECWRK_NETWORK_RETRIES"] = network_retries
+        ENV["SPECWRK_HTTP_COMPRESSION"] = http_compression ? "1" : "0"
       end
     end
 
@@ -394,8 +396,9 @@ module Specwrk
       desc "Start a server and workers, watch for file changes in the current directory, and execute specs"
       option :watchfile, type: :string, default: "Specwrk.watchfile.rb", desc: "Path to watchfile configuration"
       option :count, type: :integer, default: 1, aliases: ["-c"], desc: "The number of worker processes you want to start"
+      option :http_compression, type: :boolean, default: ENV.fetch("SPECWRK_HTTP_COMPRESSION", "0") == "1", desc: "Compress large JSON request bodies sent to the server. Overrides SPECWRK_HTTP_COMPRESSION"
 
-      def call(count:, watchfile:, **args)
+      def call(count:, watchfile:, http_compression: false, **args)
         $stdout.sync = true
 
         # nil this env var if it exists to prevent never-ending workers
@@ -409,6 +412,7 @@ module Specwrk
         ENV["SPECWRK_MAX_BUCKET_SIZE"] = "1"
         ENV["SPECWRK_COUNT"] = count.to_s
         ENV["SPECWRK_RUN"] = "watch"
+        ENV["SPECWRK_HTTP_COMPRESSION"] = http_compression ? "1" : "0"
 
         self.class.setup(**args)
 

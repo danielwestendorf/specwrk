@@ -14,12 +14,14 @@ RSpec.describe Specwrk::CLI::Seed do
       key: "",
       run: "main",
       timeout: "5",
-      network_retries: "1"
+      network_retries: "1",
+      http_compression: http_compression
     )
   end
 
   let(:command) { described_class.new }
   let(:target_bucket_timing_duration) { "0" }
+  let(:http_compression) { false }
   let(:examples) { [{id: "spec/a_spec.rb:1", file_path: "spec/a_spec.rb"}] }
   let(:client) { instance_double(Specwrk::Client, seed: true) }
 
@@ -37,6 +39,17 @@ RSpec.describe Specwrk::CLI::Seed do
     call
 
     expect(ENV["SPECWRK_TARGET_BUCKET_TIMING_DURATION"]).to eq("0.0")
+    expect(ENV["SPECWRK_HTTP_COMPRESSION"]).to eq("0")
+  end
+
+  context "with HTTP compression enabled" do
+    let(:http_compression) { true }
+
+    it "enables HTTP compression for the client" do
+      call
+
+      expect(ENV["SPECWRK_HTTP_COMPRESSION"]).to eq("1")
+    end
   end
 
   context "with a target bucket timing duration" do

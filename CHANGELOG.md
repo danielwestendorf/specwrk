@@ -2,6 +2,7 @@
 
 ## Unreleased  
 [Compare](https://github.com/danielwestendorf/specwrk/compare/v0.20.2...main)  
+- Add opt-in gzip request compression and negotiated gzip responses
 
 ## v0.20.2 — 2026-08-27  
 [Compare](https://github.com/danielwestendorf/specwrk/compare/v0.20.1...v0.20.2)  
