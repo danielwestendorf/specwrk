@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "json"
+require "zlib"
 
 require "specwrk/store"
 
@@ -9,6 +10,8 @@ module Specwrk
     module Endpoints
       class Base
         MUTEX = Mutex.new
+        InvalidGzipError = Class.new(StandardError)
+        UnsupportedContentEncodingError = Class.new(StandardError)
 
         attr_reader :started_at
 
@@ -32,6 +35,10 @@ module Specwrk
           end
         rescue Store::LockUnavailableError
           locked
+        rescue InvalidGzipError
+          [400, {"content-type" => "text/plain"}, ["Invalid gzip request body"]]
+        rescue UnsupportedContentEncodingError
+          [415, {"content-type" => "text/plain"}, ["Unsupported content encoding"]]
         end
 
         def with_response
@@ -75,7 +82,21 @@ module Specwrk
         end
 
         def body
-          @body ||= request.body.read
+          @body ||= begin
+            body = request.body.read
+            encoding = request.get_header("HTTP_CONTENT_ENCODING")&.strip&.downcase
+
+            case encoding
+            when nil, "", "identity"
+              body
+            when "gzip"
+              Zlib.gunzip(body)
+            else
+              raise UnsupportedContentEncodingError
+            end
+          rescue Zlib::Error
+            raise InvalidGzipError
+          end
         end
 
         def pending

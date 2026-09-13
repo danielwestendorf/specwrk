@@ -32,7 +32,8 @@ RSpec.describe Specwrk::Client do
       "SPECWRK_SRV_KEY" => srv_key,
       "SPECWRK_RUN" => run_id,
       "SPECWRK_ID" => worker_id,
-      "SPECWRK_NETWORK_RETRIES" => "5"
+      "SPECWRK_NETWORK_RETRIES" => "5",
+      "SPECWRK_HTTP_COMPRESSION" => "0"
     ))
   end
 
@@ -257,6 +258,26 @@ RSpec.describe Specwrk::Client do
       end
 
       it { is_expected.to eq(examples) }
+
+      context "with HTTP compression enabled" do
+        let(:payload) { [{id: "a" * Specwrk::Client::HTTP_COMPRESSION_MINIMUM_SIZE}] }
+
+        before do
+          stub_const("ENV", ENV.to_h.merge("SPECWRK_HTTP_COMPRESSION" => "1"))
+        end
+
+        it "gzip compresses completed example results" do
+          request = nil
+          stub_request(:post, "#{base_uri}/complete_and_pop")
+            .with { |value| request = value }
+            .to_return(status: 200, body: examples.to_json)
+
+          subject
+
+          expect(request.headers["Content-Encoding"]).to eq("gzip")
+          expect(Zlib.gunzip(request.body)).to eq(payload.to_json)
+        end
+      end
     end
 
     context "when response is 204" do
@@ -381,6 +402,65 @@ RSpec.describe Specwrk::Client do
             .with(body: {max_retries: 5, examples: examples, target_bucket_timing_duration: 12.5}.to_json)
         end
       end
+
+      context "with HTTP compression enabled" do
+        let(:examples) { [{id: "a" * Specwrk::Client::HTTP_COMPRESSION_MINIMUM_SIZE}] }
+
+        before do
+          stub_const("ENV", ENV.to_h.merge("SPECWRK_HTTP_COMPRESSION" => "1"))
+        end
+
+        it "gzip compresses the JSON request body" do
+          request = nil
+          stub_request(:post, "#{base_uri}/seed")
+            .with { |value| request = value }
+            .to_return(status: 200)
+
+          subject
+
+          expect(request.headers["Content-Encoding"]).to eq("gzip")
+          expect(Zlib.gunzip(request.body)).to eq({max_retries: 5, examples: examples, target_bucket_timing_duration: 0}.to_json)
+        end
+      end
+
+      context "with HTTP compression enabled for a small body" do
+        before do
+          stub_const("ENV", ENV.to_h.merge("SPECWRK_HTTP_COMPRESSION" => "1"))
+        end
+
+        it "sends the JSON request body uncompressed" do
+          request = nil
+          stub_request(:post, "#{base_uri}/seed")
+            .with { |value| request = value }
+            .to_return(status: 200)
+
+          subject
+
+          expect(request.headers).not_to have_key("Content-Encoding")
+          expect(request.body).to eq({max_retries: 5, examples: examples, target_bucket_timing_duration: 0}.to_json)
+        end
+
+        context "with a smaller minimum size configured" do
+          before do
+            stub_const("ENV", ENV.to_h.merge(
+              "SPECWRK_HTTP_COMPRESSION" => "1",
+              "SPECWRK_HTTP_COMPRESSION_MINIMUM_SIZE" => "1"
+            ))
+          end
+
+          it "gzip compresses the JSON request body" do
+            request = nil
+            stub_request(:post, "#{base_uri}/seed")
+              .with { |value| request = value }
+              .to_return(status: 200)
+
+            subject
+
+            expect(request.headers["Content-Encoding"]).to eq("gzip")
+            expect(Zlib.gunzip(request.body)).to eq({max_retries: 5, examples: examples, target_bucket_timing_duration: 0}.to_json)
+          end
+        end
+      end
     end
 
     context "when response is error" do
@@ -390,6 +470,21 @@ RSpec.describe Specwrk::Client do
 
       it "raises an UnhandledResponseError" do
         expect { subject }.to raise_error(Specwrk::UnhandledResponseError, /500: boom/)
+      end
+
+      context "with HTTP compression enabled" do
+        let(:examples) { [{id: "a" * Specwrk::Client::HTTP_COMPRESSION_MINIMUM_SIZE}] }
+
+        before do
+          stub_const("ENV", ENV.to_h.merge("SPECWRK_HTTP_COMPRESSION" => "1"))
+        end
+
+        it "surfaces the server error without retrying uncompressed" do
+          expect { subject }.to raise_error(Specwrk::UnhandledResponseError, /500: boom/)
+          expect(WebMock).to have_requested(:post, "#{base_uri}/seed")
+            .with(headers: {"Content-Encoding" => "gzip"})
+            .once
+        end
       end
     end
   end
@@ -409,6 +504,13 @@ RSpec.describe Specwrk::Client do
       end
 
       it { is_expected.to eq(data) }
+
+      it "allows Net::HTTP to negotiate a compressed response" do
+        subject
+
+        expect(WebMock).to have_requested(:get, "#{base_uri}/report")
+          .with(headers: {"Accept-Encoding" => /gzip/})
+      end
     end
 
     context "when response is error" do

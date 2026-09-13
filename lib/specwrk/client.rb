@@ -3,6 +3,7 @@
 require "uri"
 require "net/http"
 require "json"
+require "zlib"
 
 require "specwrk"
 
@@ -13,6 +14,7 @@ Specwrk.net_http = Net::HTTP
 module Specwrk
   class Client
     LockedResponseError = Class.new(StandardError)
+    HTTP_COMPRESSION_MINIMUM_SIZE = 1024
 
     def self.connect?
       http = build_http
@@ -132,56 +134,64 @@ module Specwrk
     private
 
     def get(path, headers: default_headers, body: nil)
-      request = Specwrk.net_http::Get.new(path, headers)
-      request.body = body if body
-
-      make_request(request)
+      make_request Specwrk.net_http::Get, path, headers: headers, body: body
     end
 
     def post(path, headers: default_headers, body: nil)
-      request = Specwrk.net_http::Post.new(path, headers)
-      request.body = body if body
-
-      make_request(request)
+      make_request Specwrk.net_http::Post, path, headers: headers, body: body
     end
 
     def put(path, headers: default_headers, body: nil)
-      request = Specwrk.net_http::Put.new(path, headers)
-      request.body = body if body
-
-      make_request(request)
+      make_request Specwrk.net_http::Put, path, headers: headers, body: body
     end
 
     def delete(path, headers: default_headers, body: nil)
-      request = Specwrk.net_http::Delete.new(path, headers)
-      request.body = body if body
-
-      make_request(request)
+      make_request Specwrk.net_http::Delete, path, headers: headers, body: body
     end
 
-    def make_request(request)
-      @mutex.synchronize do
-        @last_request_at = Time.now
-        @http.request(request).tap do |response|
-          @retry_count = 0
-          raise LockedResponseError if response.code == "423"
+    def make_request(request_class, path, headers:, body:)
+      headers = headers.dup
 
-          @worker_status = response["x-specwrk-status"].to_i if response["x-specwrk-status"]
-        end
+      if http_compression? && headers["Content-Type"] == "application/json" && body&.bytesize.to_i >= http_compression_minimum_size
+        body = Zlib.gzip(body)
+        headers["Content-Encoding"] = "gzip"
       end
-    rescue LockedResponseError
-      sleep rand
-      retry
-    rescue Net::ReadTimeout, Net::WriteTimeout => e
-      @retry_count ||= 0
 
-      raise e if @retry_count == ENV["SPECWRK_NETWORK_RETRIES"].to_i
-      @retry_count += 1
+      request = request_class.new(path, headers)
+      request.body = body if body
 
-      warn e
-      sleep @retry_count
+      begin
+        @mutex.synchronize do
+          @last_request_at = Time.now
+          @http.request(request).tap do |response|
+            @retry_count = 0
+            raise LockedResponseError if response.code == "423"
 
-      retry
+            @worker_status = response["x-specwrk-status"].to_i if response["x-specwrk-status"]
+          end
+        end
+      rescue LockedResponseError
+        sleep rand
+        retry
+      rescue Net::ReadTimeout, Net::WriteTimeout => e
+        @retry_count ||= 0
+
+        raise e if @retry_count == ENV["SPECWRK_NETWORK_RETRIES"].to_i
+        @retry_count += 1
+
+        warn e
+        sleep @retry_count
+
+        retry
+      end
+    end
+
+    def http_compression?
+      ENV.fetch("SPECWRK_HTTP_COMPRESSION", "0") == "1"
+    end
+
+    def http_compression_minimum_size
+      ENV.fetch("SPECWRK_HTTP_COMPRESSION_MINIMUM_SIZE", HTTP_COMPRESSION_MINIMUM_SIZE).to_i
     end
 
     def default_headers

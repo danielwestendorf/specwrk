@@ -5,6 +5,7 @@ require "fileutils"
 
 require "webrick"
 require "rack"
+require "rack/deflater"
 
 # rack v3 or v2
 begin
@@ -67,6 +68,8 @@ module Specwrk
 
         def rackup
           Rack::Builder.new do
+            use Rack::Deflater, include: ["application/json"]
+
             if ENV["SPECWRK_SRV_VERBOSE"]
               use Rack::Runtime
               use Specwrk::Web::Logger, $stdout, %w[/health]

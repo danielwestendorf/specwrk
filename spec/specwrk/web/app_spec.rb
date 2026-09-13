@@ -177,4 +177,45 @@ RSpec.describe Specwrk::Web::App do
       it { is_expected.to eq 107 }
     end
   end
+
+  describe ".rackup" do
+    let(:mock_request) { Rack::MockRequest.new(described_class.rackup) }
+
+    it "gzip compresses JSON responses when requested" do
+      response = mock_request.get(
+        "/report",
+        "HTTP_ACCEPT_ENCODING" => "gzip",
+        "HTTP_X_SPECWRK_RUN" => "compression-run",
+        "HTTP_X_SPECWRK_ID" => "compression-client"
+      )
+
+      expect(response["content-encoding"]).to eq("gzip")
+      expect(JSON.parse(Zlib.gunzip(response.body))).to include("meta", "examples", "flakes")
+    end
+
+    it "leaves JSON responses uncompressed when identity is requested" do
+      response = mock_request.get(
+        "/report",
+        "HTTP_ACCEPT_ENCODING" => "identity",
+        "HTTP_X_SPECWRK_RUN" => "identity-run",
+        "HTTP_X_SPECWRK_ID" => "identity-client"
+      )
+
+      expect(response["content-encoding"]).to be_nil
+      expect(JSON.parse(response.body)).to include("meta", "examples", "flakes")
+    end
+
+    it "decodes gzip request bodies before routing to an endpoint" do
+      response = mock_request.post(
+        "/seed",
+        :input => Zlib.gzip(JSON.generate(max_retries: 0, examples: [])),
+        "CONTENT_TYPE" => "application/json",
+        "HTTP_CONTENT_ENCODING" => "gzip",
+        "HTTP_X_SPECWRK_RUN" => "compressed-seed-run",
+        "HTTP_X_SPECWRK_ID" => "compressed-seed-client"
+      )
+
+      expect(response.status).to eq(200)
+    end
+  end
 end
