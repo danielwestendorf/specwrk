@@ -247,7 +247,7 @@ module Specwrk
       end
 
       def status
-        @exited_pids.value?(1) ? 1 : 0
+        @exited_pids.values.any?(&:nonzero?) ? 1 : 0
       end
     end
 
