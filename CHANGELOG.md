@@ -1,7 +1,11 @@
 # Changelog
 
 ## Unreleased
-[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.21.0...main)
+[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.21.1...main)
+
+## v0.21.1 — 2026-09-29
+[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.21.0...v0.21.1)
+- Treat any non-zero worker exit as a failure — [#196](https://github.com/danielwestendorf/specwrk/pull/196) by [@scottjacobsen](https://github.com/scottjacobsen)
 
 ## v0.21.0 — 2026-09-13
 [Compare](https://github.com/danielwestendorf/specwrk/compare/v0.20.2...v0.21.0)
