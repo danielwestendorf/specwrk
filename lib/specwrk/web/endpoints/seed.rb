@@ -17,6 +17,8 @@ module Specwrk
 
           pending.max_retries = payload.fetch(:max_retries, "0").to_i
 
+          metadata.delete("report_json")
+
           pending.update_run_time_bucket_maximum(
             @seeds_run_time_bucket_maximum,
             target_bucket_timing_duration: payload.fetch(:target_bucket_timing_duration, 0)
