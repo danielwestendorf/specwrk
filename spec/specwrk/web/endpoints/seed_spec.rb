@@ -35,6 +35,14 @@ RSpec.describe Specwrk::Web::Endpoints::Seed do
     expect(pending_length_seen_by_hook).to eq(1)
   end
 
+  it "clears a cached report when seeding a new run" do
+    metadata[:report_json] = "stale report"
+
+    subject
+
+    expect(metadata[:report_json]).to be_nil
+  end
+
   context "pending store reset with examples and meta data" do
     let(:existing_pending_data) { {"b.rb:2" => {id: "b.rb:2", file_path: "b.rb", expected_run_time: 0.1}} }
 
