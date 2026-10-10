@@ -1,7 +1,11 @@
 # Changelog
 
 ## Unreleased
-[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.21.1...main)
+[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.21.2...main)
+
+## v0.21.2 — 2026-10-10
+[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.21.1...v0.21.2)
+- Cache generated reports — [#197](https://github.com/danielwestendorf/specwrk/pull/197) by [@danielwestendorf](https://github.com/danielwestendorf)
 
 ## v0.21.1 — 2026-09-29
 [Compare](https://github.com/danielwestendorf/specwrk/compare/v0.21.0...v0.21.1)
