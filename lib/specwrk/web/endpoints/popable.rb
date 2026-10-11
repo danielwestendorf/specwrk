@@ -59,13 +59,18 @@ module Specwrk
           @expired_examples ||= processing.to_h.select { |_id, example| expired?(example) }
         end
 
-        # Has the worker missed two heartbeat check-ins?
+        # Has the worker missed its configured heartbeat timeout?
         def expired?(example)
           return false unless example[:worker_id]
           return false unless example[:processing_started_at]
-          return false unless example[:processing_started_at] < (Time.now - 20).to_i
 
-          workers_last_heartbeats[example[:worker_id]] < Time.now - 20
+          timeout = Integer(ENV.fetch("SPECWRK_WORKER_HEARTBEAT_TIMEOUT", "60"))
+          raise ArgumentError, "SPECWRK_WORKER_HEARTBEAT_TIMEOUT must be greater than 0" unless timeout.positive?
+
+          cutoff = Time.now - timeout
+          return false unless example[:processing_started_at] < cutoff.to_i
+
+          workers_last_heartbeats[example[:worker_id]] < cutoff
         end
 
         def workers_last_heartbeats

@@ -309,6 +309,8 @@ RSpec.describe Specwrk::Worker do
   describe "#thump" do
     context "while running and not force_quit" do
       before do
+        stub_const("ENV", ENV.to_h.merge("SPECWRK_HEARTBEAT_INTERVAL" => "5"))
+
         allow(instance).to receive(:running)
           .and_return(true)
 
@@ -317,7 +319,7 @@ RSpec.describe Specwrk::Worker do
 
         sleep_count = 0
 
-        allow(instance).to receive(:sleep).with(10) do
+        allow(instance).to receive(:sleep).with(5) do
           raise "Boom" if sleep_count == 1
           sleep_count += 1
         end
@@ -333,7 +335,7 @@ RSpec.describe Specwrk::Worker do
         expect { instance.thump }.to raise_error("Boom")
       end
 
-      it "last request < 10 sec ago" do
+      it "last request < 5 sec ago" do
         allow(client).to receive(:last_request_at)
           .and_return(Time.now - 1)
 
@@ -342,9 +344,9 @@ RSpec.describe Specwrk::Worker do
         expect { instance.thump }.to raise_error("Boom")
       end
 
-      it "last request > 9 sec ago" do
+      it "last request > 4 sec ago" do
         allow(client).to receive(:last_request_at)
-          .and_return(Time.now - 9)
+          .and_return(Time.now - 5)
 
         expect(client).to receive(:heartbeat)
           .and_return(true)

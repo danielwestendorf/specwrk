@@ -97,11 +97,14 @@ module Specwrk
     end
 
     def thump
+      heartbeat_interval = Integer(ENV.fetch("SPECWRK_HEARTBEAT_INTERVAL", "5"))
+      raise ArgumentError, "SPECWRK_HEARTBEAT_INTERVAL must be greater than 0" unless heartbeat_interval.positive?
+
       while running && !Specwrk.force_quit
-        sleep 10
+        sleep heartbeat_interval
 
         begin
-          client.heartbeat if client.last_request_at.nil? || client.last_request_at < Time.now - 9
+          client.heartbeat if client.last_request_at.nil? || client.last_request_at < Time.now - heartbeat_interval + 1
         rescue
           warn "Heartbeat failed!"
         end
