@@ -1,7 +1,11 @@
 # Changelog
 
 ## Unreleased
-[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.21.2...main)
+[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.21.3...main)
+
+## v0.21.3 — 2026-10-11
+[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.21.2...v0.21.3)
+- Make worker heartbeat intervals and expiration timeouts configurable — [#198](https://github.com/danielwestendorf/specwrk/pull/198) by [@danielwestendorf](https://github.com/danielwestendorf)
 
 ## v0.21.2 — 2026-10-10
 [Compare](https://github.com/danielwestendorf/specwrk/compare/v0.21.1...v0.21.2)
