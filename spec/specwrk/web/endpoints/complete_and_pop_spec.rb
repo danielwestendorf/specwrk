@@ -110,7 +110,7 @@ RSpec.describe Specwrk::Web::Endpoints::CompleteAndPop do
       {"a.rb:2": {id: "a.rb:2", file_path: "a.rb", expected_run_time: 0.1, processing_started_at: (Time.now - 100).to_i, worker_id: other_worker_id}}
     end
 
-    before { other_worker.last_seen_at = Time.now - 19 }
+    before { other_worker.last_seen_at = Time.now - 59 }
 
     it { is_expected.to eq([404, {"content-type" => "text/plain", "x-specwrk-status" => "0"}, ["This is not the path you're looking for, 'ol chap..."]]) }
   end
@@ -120,7 +120,7 @@ RSpec.describe Specwrk::Web::Endpoints::CompleteAndPop do
       {"a.rb:2": {id: "a.rb:2", file_path: "a.rb", expected_run_time: 0.1, processing_started_at: (Time.now - 100).to_i, worker_id: other_worker_id}}
     end
 
-    before { other_worker.last_seen_at = Time.now - 21 }
+    before { other_worker.last_seen_at = Time.now - 61 }
 
     it "requeues the expired example into a new pending bucket" do
       expect { subject }.to change { processing["a.rb:2"][:worker_id] }
@@ -128,6 +128,13 @@ RSpec.describe Specwrk::Web::Endpoints::CompleteAndPop do
       expect(response[0]).to eq(200)
       body_examples = JSON.parse(response[2].first, symbolize_names: true)
       expect(body_examples.map { |ex| ex[:id] }).to eq(["a.rb:2"])
+    end
+
+    it "uses the configured heartbeat timeout" do
+      stub_const("ENV", ENV.to_h.merge("SPECWRK_WORKER_HEARTBEAT_TIMEOUT" => "30"))
+      other_worker.last_seen_at = Time.now - 31
+
+      expect { subject }.to change { processing["a.rb:2"][:worker_id] }
     end
   end
 
