@@ -1,7 +1,11 @@
 # Changelog
 
 ## Unreleased
-[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.21.3...main)
+[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.21.4...main)
+
+## v0.21.4 — 2026-10-12
+[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.21.3...v0.21.4)
+- Return a Rack-compliant empty response when the worker queue is empty — [#199](https://github.com/danielwestendorf/specwrk/pull/199) by [@danielwestendorf](https://github.com/danielwestendorf)
 
 ## v0.21.3 — 2026-10-11
 [Compare](https://github.com/danielwestendorf/specwrk/compare/v0.21.2...v0.21.3)
