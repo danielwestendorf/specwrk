@@ -12,7 +12,7 @@ module Specwrk
           if examples.any?
             [200, {"content-type" => "application/json"}, [JSON.generate(examples)]]
           elsif pending.empty? && processing.empty? && completed.empty?
-            [204, {"content-type" => "text/plain"}, ["Waiting for sample to be seeded."]]
+            [204, {}, []]
           elsif completed.any? && processing.empty?
             [410, {"content-type" => "text/plain"}, ["That's a good lad. Run along now and go home."]]
           elsif expired_examples.length.positive?
