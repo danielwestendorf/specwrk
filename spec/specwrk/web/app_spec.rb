@@ -179,7 +179,19 @@ RSpec.describe Specwrk::Web::App do
   end
 
   describe ".rackup" do
-    let(:mock_request) { Rack::MockRequest.new(described_class.rackup) }
+    let(:mock_request) { Rack::MockRequest.new(Rack::Lint.new(described_class.rackup)) }
+
+    it "returns a Rack-compliant 204 response when the queue is empty" do
+      response = mock_request.post(
+        "/pop",
+        "HTTP_X_SPECWRK_RUN" => "lint-run",
+        "HTTP_X_SPECWRK_ID" => "lint-worker"
+      )
+
+      expect(response.status).to eq(204)
+      expect(response.body).to be_empty
+      expect(response["content-type"]).to be_nil
+    end
 
     it "gzip compresses JSON responses when requested" do
       response = mock_request.get(

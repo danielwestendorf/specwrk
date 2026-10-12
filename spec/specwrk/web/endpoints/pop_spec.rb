@@ -17,7 +17,7 @@ RSpec.describe Specwrk::Web::Endpoints::Pop do
   end
 
   context "no items in any queue" do
-    it { is_expected.to eq([204, {"content-type" => "text/plain", "x-specwrk-status" => "1"}, ["Waiting for sample to be seeded."]]) }
+    it { is_expected.to eq([204, {"x-specwrk-status" => "1"}, []]) }
   end
 
   context "no items in the processing queue, no known failed for worker, but completed queue has items" do
