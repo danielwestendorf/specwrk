@@ -66,3 +66,7 @@
 # Specwrk.after_all_workers_exit do |status|
 #   specwrk_hook_log.call("after_all_workers_exit", status: status)
 # end
+#
+# Specwrk.after_start_complete do |status|
+#   specwrk_hook_log.call("after_start_complete", status: status)
+# end

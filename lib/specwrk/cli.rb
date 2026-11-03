@@ -353,6 +353,7 @@ module Specwrk
         status = Specwrk::CLIReporter.new.report
 
         Specwrk.wait_for_pids_exit([web_pid, seed_pid])
+        Hooks.run(:after_start_complete, status)
         exit(status)
       end
 

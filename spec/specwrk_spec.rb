@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "tmpdir"
+
 RSpec.describe Specwrk do
   it "has a version number" do
     expect(Specwrk::VERSION).not_to be nil
@@ -177,6 +179,24 @@ RSpec.describe Specwrk do
 
     it "requires a block" do
       expect { described_class.after_all_workers_exit }
+        .to raise_error(ArgumentError, "a block is required")
+    end
+  end
+
+  describe ".after_start_complete" do
+    it "registers an after_start_complete hook and returns the block" do
+      status = Object.new
+      received = nil
+      hook = proc { |value| received = value }
+
+      expect(described_class.after_start_complete(&hook)).to be(hook)
+
+      Specwrk::Hooks.run(:after_start_complete, status)
+      expect(received).to be(status)
+    end
+
+    it "requires a block" do
+      expect { described_class.after_start_complete }
         .to raise_error(ArgumentError, "a block is required")
     end
   end
