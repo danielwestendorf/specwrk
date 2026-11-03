@@ -1,7 +1,11 @@
 # Changelog
 
 ## Unreleased
-[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.21.4...main)
+[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.22.0...main)
+
+## v0.22.0 — 2026-11-02
+[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.21.4...v0.22.0)
+- Add an `after_start_complete` lifecycle hook — [#201](https://github.com/danielwestendorf/specwrk/pull/201) by [@danielwestendorf](https://github.com/danielwestendorf)
 
 ## v0.21.4 — 2026-10-12
 [Compare](https://github.com/danielwestendorf/specwrk/compare/v0.21.3...v0.21.4)
