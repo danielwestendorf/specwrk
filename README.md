@@ -325,4 +325,4 @@ Maintainers can follow [RELEASING.md](RELEASING.md) to publish the gem and Docke
 
 ## License
 
-The gem is available as open source under the terms of the [LGPLv3 License](http://www.gnu.org/licenses/lgpl-3.0.html).
+The gem is available as open source under the terms of the [GNU General Public License, version 3 or (at your option) any later version](https://www.gnu.org/licenses/gpl-3.0.html) (`GPL-3.0-or-later`).
