@@ -13,8 +13,7 @@ module Specwrk
             [200, {"content-type" => "application/json"}, [JSON.generate(examples)]]
           elsif !seeded?
             [204, {}, []]
-          # Seeding may have populated the queue since examples cached its bucket IDs.
-          elsif pending.reload.empty? && processing.empty?
+          elsif completed.any? && processing.empty?
             [410, {"content-type" => "text/plain"}, ["That's a good lad. Run along now and go home."]]
           elsif expired_examples.length.positive?
             expired_examples.each { |_id, example| example[:worker_id] = worker_id }

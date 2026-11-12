@@ -53,13 +53,13 @@ RSpec.describe Specwrk::Web::Endpoints::Pop do
   context "no items in a seeded run" do
     before { pending.max_retries = 0 }
 
-    it { is_expected.to eq([410, {"content-type" => "text/plain", "x-specwrk-status" => "0"}, ["That's a good lad. Run along now and go home."]]) }
+    it { is_expected.to eq([404, {"content-type" => "text/plain", "x-specwrk-status" => "0"}, ["This is not the path you're looking for, 'ol chap..."]]) }
 
     context "when the worker has recorded failures" do
       let(:existing_worker_data) { {failed: 2} }
 
-      it "preserves the failure status even though the run is complete" do
-        expect(response[0]).to eq(410)
+      it "preserves the failure status while waiting for completed records" do
+        expect(response[0]).to eq(404)
         expect(response[1]["x-specwrk-status"]).to eq("2")
       end
     end
@@ -92,7 +92,7 @@ RSpec.describe Specwrk::Web::Endpoints::Pop do
       completed.clear
     end
 
-    it { is_expected.to eq([410, {"content-type" => "text/plain", "x-specwrk-status" => "0"}, ["That's a good lad. Run along now and go home."]]) }
+    it { is_expected.to eq([404, {"content-type" => "text/plain", "x-specwrk-status" => "0"}, ["This is not the path you're looking for, 'ol chap..."]]) }
   end
 
   context "no items in the processing queue, no known failed for worker, but completed queue has items" do
