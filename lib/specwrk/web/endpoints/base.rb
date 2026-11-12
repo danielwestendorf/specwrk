@@ -132,9 +132,13 @@ module Specwrk
         end
 
         def worker_status
-          return 0 if worker[:failed].nil? && completed.any? # worker starts after run has completed
+          return 0 if worker[:failed].nil? && seeded?
 
           worker[:failed] || 1
+        end
+
+        def seeded?
+          !pending[PendingStore::MAX_RETRIES_KEY].nil?
         end
 
         def worker_store_for(id)

@@ -7,6 +7,7 @@ RSpec.describe Specwrk::Web::Endpoints::Seed do
   include_context "worker endpoint"
 
   let(:request_method) { "POST" }
+  let(:worker_status) { 0 }
   let(:body) { JSON.generate(max_retries: 42, examples: [{id: "a.rb:1", file_path: "a.rb", run_time: 0.1}]) }
 
   it "runs before_server_seed before resetting server state" do
@@ -41,6 +42,28 @@ RSpec.describe Specwrk::Web::Endpoints::Seed do
     subject
 
     expect(metadata[:report_json]).to be_nil
+  end
+
+  it "stores max retries only after the examples have been queued" do
+    allow(instance).to receive(:pending).and_return(pending)
+    expect(pending).to receive(:merge!).and_wrap_original do |original, examples|
+      expect(pending[Specwrk::PendingStore::MAX_RETRIES_KEY]).to be_nil
+      original.call(examples)
+    end
+
+    subject
+
+    expect(pending[Specwrk::PendingStore::MAX_RETRIES_KEY]).to eq(42)
+  end
+
+  context "seeding no examples with default retries" do
+    let(:body) { JSON.generate(examples: []) }
+
+    it "persists zero retries to distinguish the seeded run from an unseeded run" do
+      expect { subject }.to change { pending[Specwrk::PendingStore::MAX_RETRIES_KEY] }.from(nil).to(0)
+      expect(pending.reload).to be_empty
+      expect(response[1]["x-specwrk-status"]).to eq("0")
+    end
   end
 
   context "pending store reset with examples and meta data" do

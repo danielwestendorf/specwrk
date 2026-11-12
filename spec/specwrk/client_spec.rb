@@ -231,6 +231,18 @@ RSpec.describe Specwrk::Client do
       end
     end
 
+    context "when response is 410" do
+      before do
+        stub_request(:post, "#{base_uri}/pop")
+          .to_return(status: 410, headers: {"x-specwrk-status" => "0"})
+      end
+
+      it "raises CompletedAllExamplesError and records a successful worker status" do
+        expect { subject }.to raise_error(Specwrk::CompletedAllExamplesError)
+        expect(client.worker_status).to eq(0)
+      end
+    end
+
     context "when response is unknown" do
       before do
         stub_request(:post, "#{base_uri}/pop").to_return(status: 500, body: "fail")
