@@ -1,7 +1,11 @@
 # Changelog
 
 ## Unreleased
-[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.22.0...main)
+[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.22.1...main)
+
+## v0.22.1 — 2026-11-12
+[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.22.0...v0.22.1)
+- Distinguish seeded runs from runs awaiting their first seed and correct worker status while waiting for work — [#205](https://github.com/danielwestendorf/specwrk/pull/205) by [@danielwestendorf](https://github.com/danielwestendorf)
 
 ## v0.22.0 — 2026-11-02
 [Compare](https://github.com/danielwestendorf/specwrk/compare/v0.21.4...v0.22.0)
