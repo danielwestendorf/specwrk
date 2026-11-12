@@ -7,6 +7,7 @@ RSpec.describe Specwrk::Web::Endpoints::CompleteAndPop do
   include_context "worker endpoint"
 
   let(:request_method) { "POST" }
+  before { pending.max_retries = 0 }
 
   let(:body) {
     JSON.generate([

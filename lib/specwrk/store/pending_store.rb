@@ -107,6 +107,11 @@ module Specwrk
       bucket_ids.length
     end
 
+    def empty?
+      # The backing store retains configuration even when no work remains.
+      bucket_ids.empty?
+    end
+
     private
 
     def write_bucket(examples)

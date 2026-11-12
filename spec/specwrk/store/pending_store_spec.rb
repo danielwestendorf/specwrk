@@ -135,6 +135,21 @@ RSpec.describe Specwrk::PendingStore do
     end
   end
 
+  describe "#empty?" do
+    it "ignores pending store configuration" do
+      instance.max_retries = 3
+      instance.run_time_bucket_maximum = 2
+
+      expect(instance).to be_empty
+    end
+
+    it "returns false when a bucket remains" do
+      instance.push_examples([{id: "a.rb:1"}])
+
+      expect(instance).not_to be_empty
+    end
+  end
+
   describe "#push_examples" do
     it "adds a new bucket and returns its data later" do
       instance.push_examples([{id: "a.rb:1", file_path: "a.rb"}])

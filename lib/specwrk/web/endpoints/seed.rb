@@ -15,8 +15,6 @@ module Specwrk
           failure_counts.clear
           completed.clear
 
-          pending.max_retries = payload.fetch(:max_retries, "0").to_i
-
           metadata.delete("report_json")
 
           pending.update_run_time_bucket_maximum(
@@ -26,6 +24,8 @@ module Specwrk
 
           with_lock do
             pending.merge!(examples_with_run_times)
+            # Publish the seed marker only after all pending work has been stored.
+            pending.max_retries = payload.fetch(:max_retries, "0").to_i
           end
 
           Hooks.run(:after_server_seed, payload[:examples])
