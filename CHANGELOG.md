@@ -1,7 +1,11 @@
 # Changelog
 
 ## Unreleased
-[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.22.1...main)
+[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.22.2...main)
+
+## v0.22.2 — 2026-11-22
+[Compare](https://github.com/danielwestendorf/specwrk/compare/v0.22.1...v0.22.2)
+- Upgrade CI and server runtimes to Ruby 4, with Ruby 4.0.10 and Rack 3.2.9 in the Docker image — [#206](https://github.com/danielwestendorf/specwrk/pull/206) by [@danielwestendorf](https://github.com/danielwestendorf)
 
 ## v0.22.1 — 2026-11-12
 [Compare](https://github.com/danielwestendorf/specwrk/compare/v0.22.0...v0.22.1)
