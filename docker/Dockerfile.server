@@ -1,4 +1,4 @@
-FROM ruby:4.0-alpine
+FROM ruby:4.0.10-alpine
 
 RUN apk add --no-cache build-base 
 
@@ -8,9 +8,11 @@ RUN mkdir .specwrk/
 
 ARG SPECWRK_SRV_PORT=5138
 ARG SPECWRK_VERSION=latest
+ARG RACK_VERSION=3.2.9
 ARG GEM_FILE=specwrk-$SPECWRK_VERSION.gem
 
 COPY $GEM_FILE ./
+RUN gem install rack --version $RACK_VERSION --no-document
 RUN gem install ./$GEM_FILE --no-document
 RUN rm ./$GEM_FILE
 
